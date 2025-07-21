@@ -206,10 +206,17 @@ def split_sentences(text):
     sentences = re.split(r'[.!?]+', text)
     return [s.strip() for s in sentences if s.strip()]
 
+CORRECT SEARCH RESULT USAGE:
+search_result = await paradigm_client.document_search(**search_kwargs)
+# Use the AI-generated answer from search results
+answer = search_result.get("answer", "No answer provided")
+# Don't try to extract raw document content - use the answer field
+
 INCORRECT (DON'T DO THIS):
 file_ids=attached_file_ids if 'attached_file_ids' in globals() else None  # API doesn't accept None
 document_ids = [doc["id"] for doc in search_results.get("documents", [])]  # Should convert to strings
 import nltk  # External library not available
+answer = search_result["documents"][0].get("content", "")  # Raw content extraction
 
 Generate the complete self-contained workflow code that implements the exact logic described."""
         
