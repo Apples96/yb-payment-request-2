@@ -146,7 +146,7 @@ class AnthropicClient:
     
     async def chat_completion(self, prompt: str) -> str:
         payload = {
-            "model": "claude-3-sonnet-20240229",
+            "model": "claude-3-5-sonnet-20241022",
             "max_tokens": 1000,
             "messages": [{"role": "user", "content": prompt}]
         }
@@ -193,7 +193,7 @@ Generate a complete, self-contained workflow that:
         
         try:
             response = self.anthropic_client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-5-sonnet-20241022",
                 max_tokens=4000,  # Increased for full code generation
                 system=system_prompt,
                 messages=[{"role": "user", "content": enhanced_description}]
@@ -243,7 +243,7 @@ Based on the original description, the code that was generated, the actual execu
 """
         
         response = self.anthropic_client.messages.create(
-            model="claude-3-sonnet-20240229",
+            model="claude-3-5-sonnet-20241022",
             max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
