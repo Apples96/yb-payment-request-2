@@ -47,7 +47,11 @@ app.add_middleware(
         "http://localhost:3000", 
         "http://127.0.0.1:3000",
         "https://scaffold-ai-test2.vercel.app",
-        "https://*.vercel.app"
+        "https://*.vercel.app",
+        "https://*.netlify.app",
+        "https://*.github.io",
+        "https://*.surge.sh",
+        "https://*.firebaseapp.com"
     ],  # Frontend origins
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
