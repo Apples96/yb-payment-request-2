@@ -503,7 +503,7 @@ async def paradigm_upload_file(
                 data=data,
                 headers=headers
             ) as response:
-                if response.status == 200:
+                if response.status == 201:
                     result = await response.json()
                     logger.info(f"✅ UPLOAD SUCCESS: File ID = {result.get('id')}, Status = {result.get('status')}")
                     return result
