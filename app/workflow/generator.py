@@ -174,6 +174,13 @@ async def execute_workflow(user_input: str) -> str:
     pass
 ```
 
+IMPORTANT LIBRARY RESTRICTIONS:
+- Only use built-in Python libraries (asyncio, json, logging, typing, re, etc.)
+- Only use aiohttp for HTTP requests (already included in template)
+- DO NOT import external libraries like nltk, requests, pandas, numpy, etc.
+- For text processing, use built-in string methods and 're' module instead of nltk
+- For sentence splitting, use simple regex: re.split(r'[.!?]+', text)
+
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
@@ -193,9 +200,16 @@ search_results = await paradigm_client.document_search(**search_kwargs)
 CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
 
+CORRECT TEXT PROCESSING (using built-in libraries):
+import re
+def split_sentences(text):
+    sentences = re.split(r'[.!?]+', text)
+    return [s.strip() for s in sentences if s.strip()]
+
 INCORRECT (DON'T DO THIS):
 file_ids=attached_file_ids if 'attached_file_ids' in globals() else None  # API doesn't accept None
 document_ids = [doc["id"] for doc in search_results.get("documents", [])]  # Should convert to strings
+import nltk  # External library not available
 
 Generate the complete self-contained workflow code that implements the exact logic described."""
         
