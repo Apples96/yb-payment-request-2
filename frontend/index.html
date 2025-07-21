@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Automation Test</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffe6e6;
+            border-color: #ff9999;
+            color: #cc0000;
+        }
+        .success {
+            background: #e6ffe6;
+            border-color: #99ff99;
+            color: #006600;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .workflow-info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .logs-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-timestamp {
+            color: #888;
+        }
+        .log-api-call {
+            color: #00ccff;
+            font-weight: bold;
+        }
+        .log-query {
+            color: #ffcc00;
+        }
+        .log-doc-ids {
+            color: #ff9900;
+        }
+        .log-response {
+            color: #00ff88;
+        }
+        .log-error {
+            color: #ff4444;
+        }
+        .log-workflow-step {
+            color: #ff00ff;
+            font-weight: bold;
+        }
+        .log-endpoint {
+            color: #00ffff;
+        }
+        .log-payload {
+            color: #ffaa00;
+        }
+        .log-chunk {
+            color: #aaffaa;
+            font-size: 10px;
+        }
+        .log-detailed {
+            color: #cccccc;
+            font-size: 10px;
+            margin-left: 15px;
+        }
+        .clear-logs {
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: #fafafa;
+            margin: 10px 0;
+        }
+        .file-upload-area.dragover {
+            border-color: #007bff;
+            background: #e7f3ff;
+        }
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        .file-list li {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .file-info {
+            flex-grow: 1;
+        }
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .file-actions button {
+            padding: 4px 8px;
+            font-size: 12px;
+            margin: 0;
+        }
+        .remove-file {
+            background: #dc3545;
+        }
+        .remove-file:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Workflow Automation Test</h1>
+    
+    <!-- Step 1: Create Workflow -->
+    <div class="container">
+        <h2>1. Create Workflow</h2>
+        <p>Describe a workflow using natural language:</p>
+        <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information...">Search for documents about the user's question, then analyze those documents to provide a detailed summary.</textarea>
+        <input type="text" id="workflowName" placeholder="Workflow name (optional)" />
+        <button onclick="createWorkflow()">Create Workflow</button>
+        <div id="workflowResult"></div>
+    </div>
+
+    <!-- Step 2: Execute Workflow with Query & Documents -->
+    <div class="container">
+        <h2>2. Execute Workflow</h2>
+        <p>Enter your query and optionally attach documents:</p>
+        
+        <!-- Query Input -->
+        <input type="text" id="testQuery" placeholder="What is LightOn's main technology platform?" />
+        
+        <!-- Document Upload Section -->
+        <div style="margin: 15px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">📎 Attach Documents (Optional):</label>
+            <div class="file-upload-area" id="queryUploadArea" ondrop="handleQueryDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <p>📎 Drag and drop files here or <button onclick="document.getElementById('queryFileInput').click()">browse files</button></p>
+                <input type="file" id="queryFileInput" multiple style="display: none;" onchange="handleQueryFileSelect(event)">
+                <p style="font-size: 12px; color: #666;">Upload documents to analyze with your query</p>
+            </div>
+            
+            <div id="queryUploadStatus"></div>
+            <ul class="file-list" id="queryFilesList"></ul>
+        </div>
+        
+        <button onclick="executeWorkflowWithQuery()" id="testButton" disabled>Execute Workflow</button>
+        <div id="testResult"></div>
+    </div>
+
+    <!-- Step 3: Comprehensive Workflow Logs -->
+    <div class="container">
+        <h2>3. Comprehensive Workflow Execution Logs</h2>
+        <p>Monitor every step of workflow execution with detailed information:</p>
+        <ul style="font-size: 12px; color: #666; margin: 10px 0;">
+            <li>🔍 API endpoints called and payloads sent</li>
+            <li>📊 Document IDs, file IDs, and search queries</li>
+            <li>💬 Response content and analysis results</li>
+            <li>📄 Document chunks and file processing details</li>
+            <li>⚡ Step-by-step workflow execution flow</li>
+            <li>❌ Error handling and fallback mechanisms</li>
+        </ul>
+        <button onclick="clearLogs()" class="clear-logs">Clear Logs</button>
+        <div class="logs-container" id="logsContainer">
+            <div class="log-entry">
+                <span class="log-timestamp">[Ready]</span> <span class="log-response">Waiting for API activity...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let currentWorkflowId = null;
+        let logCounter = 0;
+        let queryAttachedFiles = [];  // Store files attached to current query
+
+        // Query-specific file upload functions
+        function handleQueryDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const uploadArea = document.getElementById('queryUploadArea');
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(event.dataTransfer.files);
+            uploadQueryFiles(files);
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const uploadArea = event.target.closest('.file-upload-area');
+            if (uploadArea) {
+                uploadArea.classList.add('dragover');
+            }
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const uploadArea = event.target.closest('.file-upload-area');
+            if (uploadArea) {
+                uploadArea.classList.remove('dragover');
+            }
+        }
+
+        function handleQueryFileSelect(event) {
+            const files = Array.from(event.target.files);
+            uploadQueryFiles(files);
+        }
+
+        async function uploadQueryFiles(files) {
+            const statusDiv = document.getElementById('queryUploadStatus');
+            const filesList = document.getElementById('queryFilesList');
+            
+            for (const file of files) {
+                try {
+                    statusDiv.innerHTML = `<div class="result loading">Uploading ${file.name}...</div>`;
+                    addLog(`📤 Uploading query attachment: ${file.name} (${file.size} bytes)`, 'info');
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('collection_type', 'private');
+                    
+                    const { response, data } = await loggedFetch(`${API_BASE}/files/upload`, {
+                        method: 'POST',
+                        body: formData
+                    }, `UPLOAD QUERY FILE: ${file.name}`);
+                    
+                    if (response.ok) {
+                        // Add to query attached files list
+                        queryAttachedFiles.push(data);
+                        
+                        // Update UI
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <div class="file-info">
+                                <strong>${data.filename}</strong> (ID: ${data.id})
+                                <br><small>${data.bytes} bytes • Status: ${data.status}</small>
+                            </div>
+                            <div class="file-actions">
+                                <button onclick="removeQueryFile(${data.id})" class="remove-file" title="Remove attachment">🗑️</button>
+                            </div>
+                        `;
+                        filesList.appendChild(listItem);
+                        
+                        statusDiv.innerHTML = `<div class="result success">✅ ${file.name} attached to query!</div>`;
+                        addLog(`✅ Query file uploaded successfully: ID ${data.id}`, 'response');
+                        
+                    } else {
+                        statusDiv.innerHTML = `<div class="result error">❌ Failed to upload ${file.name}</div>`;
+                        addLog(`❌ Query upload failed: ${data.detail || 'Unknown error'}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="result error">❌ Network error uploading ${file.name}</div>`;
+                    addLog(`❌ Query upload network error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear file input
+            document.getElementById('queryFileInput').value = '';
+        }
+
+        async function removeQueryFile(fileId) {
+            if (!confirm('Are you sure you want to remove this attachment?')) return;
+            
+            try {
+                addLog(`🗑️ Removing query attachment ID: ${fileId}`, 'info');
+                
+                const { response, data } = await loggedFetch(`${API_BASE}/files/${fileId}`, {
+                    method: 'DELETE'
+                }, `DELETE QUERY FILE: ${fileId}`);
+                
+                if (response.ok) {
+                    // Remove from query attached files array
+                    queryAttachedFiles = queryAttachedFiles.filter(file => file.id !== fileId);
+                    
+                    // Remove from UI
+                    const filesList = document.getElementById('queryFilesList');
+                    const items = filesList.querySelectorAll('li');
+                    items.forEach(item => {
+                        if (item.innerHTML.includes(`ID: ${fileId}`)) {
+                            item.remove();
+                        }
+                    });
+                    
+                    addLog(`✅ Query attachment removed: ID ${fileId}`, 'response');
+                    
+                } else {
+                    addLog(`❌ Remove attachment error: ${data.detail}`, 'error');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Remove attachment network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Logging functions
+        function addLog(message, type = 'info') {
+            const logsContainer = document.getElementById('logsContainer');
+            const timestamp = new Date().toLocaleTimeString();
+            const logId = ++logCounter;
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.id = `log-${logId}`;
+            
+            let className = 'log-response';
+            switch(type) {
+                case 'api': className = 'log-api-call'; break;
+                case 'query': className = 'log-query'; break;
+                case 'docs': className = 'log-doc-ids'; break;
+                case 'error': className = 'log-error'; break;
+                case 'response': className = 'log-response'; break;
+                case 'workflow-step': className = 'log-workflow-step'; break;
+                case 'endpoint': className = 'log-endpoint'; break;
+                case 'payload': className = 'log-payload'; break;
+                case 'chunk': className = 'log-chunk'; break;
+                case 'detailed': className = 'log-detailed'; break;
+            }
+            
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span> 
+                <span class="${className}">${message}</span>
+            `;
+            
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+            return logId;
+        }
+
+        function updateLog(logId, message, type = 'response') {
+            const logEntry = document.getElementById(`log-${logId}`);
+            if (logEntry) {
+                const timestamp = new Date().toLocaleTimeString();
+                let className = 'log-response';
+                if (type === 'error') className = 'log-error';
+                
+                logEntry.innerHTML = `
+                    <span class="log-timestamp">[${timestamp}]</span> 
+                    <span class="${className}">${message}</span>
+                `;
+            }
+        }
+
+        function clearLogs() {
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = `
+                <div class="log-entry">
+                    <span class="log-timestamp">[Ready]</span> 
+                    <span class="log-response">Logs cleared. Waiting for API activity...</span>
+                </div>
+            `;
+            logCounter = 0;
+        }
+
+        // Enhanced API call wrapper with logging
+        async function loggedFetch(url, options = {}, description = '') {
+            const logId = addLog(`🌐 API CALL: ${description || url}`, 'api');
+            
+            try {
+                // Log request details
+                if (options.body) {
+                    try {
+                        const bodyData = JSON.parse(options.body);
+                        if (bodyData.description) {
+                            addLog(`📝 WORKFLOW DESC: ${bodyData.description.substring(0, 100)}...`, 'query');
+                        }
+                        if (bodyData.user_input) {
+                            addLog(`🔍 USER QUERY: ${bodyData.user_input}`, 'query');
+                        }
+                    } catch (e) {
+                        // Not JSON, skip parsing
+                    }
+                }
+                
+                const response = await fetch(url, options);
+                const data = await response.json();
+                
+                // Log response details
+                if (response.ok) {
+                    updateLog(logId, `✅ ${description || 'API CALL'} - SUCCESS (${response.status})`, 'response');
+                    
+                    // Log specific response details
+                    if (url.includes('/workflows') && !url.includes('/execute')) {
+                        addLog(`🔧 WORKFLOW ID: ${data.id}`, 'response');
+                        if (data.generated_code) {
+                            addLog(`💻 CODE GENERATED: ${data.generated_code.length} characters`, 'response');
+                        }
+                    }
+                    
+                    if (url.includes('/execute')) {
+                        addLog(`⚡ EXECUTION ID: ${data.execution_id}`, 'response');
+                        addLog(`📊 STATUS: ${data.status}`, 'response');
+                        if (data.execution_time) {
+                            addLog(`⏱️ EXECUTION TIME: ${data.execution_time.toFixed(2)}s`, 'response');
+                        }
+                    }
+                } else {
+                    updateLog(logId, `❌ ${description || 'API CALL'} - ERROR (${response.status})`, 'error');
+                    addLog(`🚨 ERROR DETAILS: ${data.detail || 'Unknown error'}`, 'error');
+                }
+                
+                return { response, data };
+                
+            } catch (error) {
+                updateLog(logId, `❌ ${description || 'API CALL'} - NETWORK ERROR`, 'error');
+                addLog(`🚨 NETWORK ERROR: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function createWorkflow() {
+            const description = document.getElementById('workflowDescription').value.trim();
+            const name = document.getElementById('workflowName').value.trim();
+            const resultDiv = document.getElementById('workflowResult');
+            
+            if (!description) {
+                showResult(resultDiv, 'Please enter a workflow description', 'error');
+                addLog('❌ No workflow description provided', 'error');
+                return;
+            }
+
+            showResult(resultDiv, 'Creating workflow...', 'loading');
+            addLog('🚀 Starting workflow creation...', 'info');
+
+            try {
+                const { response, data } = await loggedFetch(`${API_BASE}/workflows`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: description,
+                        name: name || null
+                    })
+                }, 'CREATE WORKFLOW');
+
+                if (response.ok) {
+                    currentWorkflowId = data.id;
+                    document.getElementById('testButton').disabled = false;
+                    
+                    const resultMessage = `✅ Workflow created successfully!\n\nID: ${data.id}\nName: ${data.name || 'Unnamed'}\nStatus: ${data.status}\n\nGenerated Code:\n${data.generated_code || 'No code generated'}`;
+                    
+                    showResult(resultDiv, resultMessage, 'success');
+                } else {
+                    showResult(resultDiv, `❌ Error: ${data.detail || 'Failed to create workflow'}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function executeWorkflowWithQuery() {
+            if (!currentWorkflowId) {
+                alert('Please create a workflow first');
+                addLog('❌ No workflow to execute', 'error');
+                return;
+            }
+
+            const query = document.getElementById('testQuery').value.trim();
+            const resultDiv = document.getElementById('testResult');
+            
+            if (!query) {
+                showResult(resultDiv, 'Please enter a query', 'error');
+                addLog('❌ No query provided', 'error');
+                return;
+            }
+
+            // Check if files are attached
+            const hasAttachments = queryAttachedFiles.length > 0;
+            const attachmentIds = queryAttachedFiles.map(file => file.id);
+
+            showResult(resultDiv, 'Executing workflow... (this may take up to 5 minutes for document analysis)', 'loading');
+            addLog('🚀 Starting workflow execution...', 'info');
+            addLog(`🎯 WORKFLOW ID: ${currentWorkflowId}`, 'response');
+            addLog(`📝 USER QUERY: ${query}`, 'query');
+            
+            if (hasAttachments) {
+                addLog(`📎 ATTACHED DOCUMENTS: ${attachmentIds.length} files [${attachmentIds.join(', ')}]`, 'docs');
+            }
+
+            try {
+                // Prepare execution payload with attached files
+                let executionPayload = {
+                    user_input: query
+                };
+                
+                if (hasAttachments) {
+                    executionPayload.attached_file_ids = attachmentIds;
+                }
+
+                const { response, data } = await loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(executionPayload)
+                }, 'EXECUTE WORKFLOW WITH QUERY');
+
+                if (response.ok) {
+                    const executionTime = data.execution_time ? `${data.execution_time.toFixed(2)}s` : 'N/A';
+                    
+                    addLog(`⚡ WORKFLOW EXECUTION COMPLETED in ${executionTime}`, 'workflow-step');
+                    
+                    // Enhanced workflow result parsing
+                    if (data.result) {
+                        addLog('📄 ANALYZING WORKFLOW EXECUTION DETAILS...', 'workflow-step');
+                        
+                        const result = data.result;
+                        
+                        // Look for specific workflow steps and log them with details
+                        if (result.includes('WORKFLOW STEP: Paradigm Search')) {
+                            addLog('🔍 STEP DETECTED: Paradigm Document Search executed', 'workflow-step');
+                        }
+                        
+                        if (result.includes('WORKFLOW STEP: Document Analysis')) {
+                            addLog('📊 STEP DETECTED: Document Analysis executed', 'workflow-step');
+                        }
+                        
+                        if (result.includes('WORKFLOW STEP: Ask Question About File')) {
+                            addLog('❓ STEP DETECTED: File Question executed', 'workflow-step');
+                        }
+                        
+                        if (result.includes('WORKFLOW STEP: Chat Completion')) {
+                            addLog('💬 STEP DETECTED: AI Chat Completion executed', 'workflow-step');
+                        }
+                        
+                        // Extract and log search queries
+                        const searchQueries = result.match(/SEARCH QUERY: ([^\n]+)/g);
+                        if (searchQueries) {
+                            searchQueries.forEach((query, i) => {
+                                const queryText = query.replace('SEARCH QUERY: ', '');
+                                addLog(`🔍 SEARCH QUERY ${i+1}: ${queryText}`, 'query');
+                            });
+                        }
+                        
+                        // Extract and log analysis queries
+                        const analysisQueries = result.match(/ANALYSIS QUERY: ([^\n]+)/g);
+                        if (analysisQueries) {
+                            analysisQueries.forEach((query, i) => {
+                                const queryText = query.replace('ANALYSIS QUERY: ', '');
+                                addLog(`📊 ANALYSIS QUERY ${i+1}: ${queryText}`, 'query');
+                            });
+                        }
+                        
+                        // Extract and log file questions
+                        const fileQuestions = result.match(/QUESTION: ([^\n]+)/g);
+                        if (fileQuestions) {
+                            fileQuestions.forEach((question, i) => {
+                                const questionText = question.replace('QUESTION: ', '');
+                                addLog(`❓ FILE QUESTION ${i+1}: ${questionText}`, 'query');
+                            });
+                        }
+                        
+                        // Extract and log document IDs
+                        const docIdMatches = result.match(/DOCUMENT IDS: ([^\n]+)/g);
+                        if (docIdMatches) {
+                            docIdMatches.forEach((match, i) => {
+                                const docIds = match.replace('DOCUMENT IDS: ', '');
+                                addLog(`📋 DOCUMENT IDS USED ${i+1}: ${docIds}`, 'docs');
+                            });
+                        }
+                        
+                        // Extract and log file IDs
+                        const fileIdMatches = result.match(/FILE ID: (\d+)/g);
+                        if (fileIdMatches) {
+                            fileIdMatches.forEach((match, i) => {
+                                const fileId = match.replace('FILE ID: ', '');
+                                addLog(`📁 FILE ID PROCESSED ${i+1}: ${fileId}`, 'docs');
+                            });
+                        }
+                        
+                        // Extract and log API endpoints
+                        const endpointMatches = result.match(/ENDPOINT: ([^\n]+)/g);
+                        if (endpointMatches) {
+                            endpointMatches.forEach((match, i) => {
+                                const endpoint = match.replace('ENDPOINT: ', '');
+                                addLog(`📡 API ENDPOINT ${i+1}: ${endpoint}`, 'endpoint');
+                            });
+                        }
+                        
+                        // Extract and log response content
+                        const responseMatches = result.match(/(SEARCH RESULT|ANALYSIS RESULT|FILE QUESTION RESULT): ([^\n]+)/g);
+                        if (responseMatches) {
+                            responseMatches.forEach((match, i) => {
+                                const [type, content] = match.split(': ');
+                                addLog(`💬 ${type} ${i+1}: ${content.substring(0, 150)}...`, 'response');
+                            });
+                        }
+                        
+                        // Look for error patterns
+                        const errorMatches = result.match(/❌ ([^\n]+)/g);
+                        if (errorMatches) {
+                            errorMatches.forEach((match, i) => {
+                                const error = match.replace('❌ ', '');
+                                addLog(`❌ ERROR ${i+1}: ${error}`, 'error');
+                            });
+                        }
+                        
+                        // Look for attached file processing
+                        if (hasAttachments) {
+                            addLog(`📎 PROCESSED ${attachmentIds.length} ATTACHED FILE(S): [${attachmentIds.join(', ')}]`, 'docs');
+                        }
+                    }
+                    
+                    if (data.status === 'completed') {
+                        addLog('✅ WORKFLOW EXECUTION COMPLETED SUCCESSFULLY', 'response');
+                        
+                        let resultMessage = `✅ Workflow executed successfully!\n\nExecution ID: ${data.execution_id}\nStatus: ${data.status}\nExecution Time: ${executionTime}`;
+                        
+                        if (hasAttachments) {
+                            resultMessage += `\nProcessed ${attachmentIds.length} attached document(s)`;
+                        }
+                        
+                        resultMessage += `\n\n=== RESULT ===\n${data.result}`;
+                        
+                        showResult(resultDiv, resultMessage, 'success');
+                        
+                        // Clear attachments after successful execution
+                        queryAttachedFiles = [];
+                        document.getElementById('queryFilesList').innerHTML = '';
+                        document.getElementById('queryUploadStatus').innerHTML = '';
+                        
+                    } else {
+                        addLog(`⚠️ WORKFLOW STATUS: ${data.status}`, 'error');
+                        showResult(resultDiv, 
+                            `⚠️ Workflow execution status: ${data.status}\n\nExecution ID: ${data.execution_id}\nExecution Time: ${executionTime}\nError: ${data.error || 'Unknown error'}`, 
+                            'error'
+                        );
+                    }
+                } else {
+                    showResult(resultDiv, `❌ Error: ${data.detail || 'Failed to execute workflow'}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(element, message, type) {
+            element.innerHTML = `<div class="result ${type}">${message}</div>`;
+            // Add feedback form after showing result if it's a workflow execution result
+            if (element.id === 'testResult' && type === 'success') {
+                element.innerHTML += `
+                <div style="margin-top:16px;">
+                  <label for="feedbackText">📝 Not happy with the result? Help improve it:</label>
+                  <textarea id="feedbackText" placeholder="Describe what went wrong or what should be improved" style="margin-top:8px;"></textarea>
+                  <button onclick="submitFeedback()" style="margin-top:8px;">Regenerate with Feedback</button>
+                  <div id="feedbackStatus"></div>
+                </div>
+                `;
+            }
+        }
+
+        async function submitFeedback() {
+            const feedback = document.getElementById('feedbackText').value.trim();
+            const resultDiv = document.getElementById('testResult');
+            const feedbackStatus = document.getElementById('feedbackStatus');
+            if (!feedback) {
+                feedbackStatus.innerHTML = '<div class="result error">Please enter feedback.</div>';
+                return;
+            }
+            // Get the last execution result from the resultDiv
+            let executionResult = resultDiv.innerText || '';
+            // Remove feedback form text from executionResult
+            executionResult = executionResult.split('📝 Not happy with the result?')[0].trim();
+            feedbackStatus.innerHTML = '<div class="result loading">Submitting feedback and regenerating code...</div>';
+            try {
+                const { response, data } = await loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/regenerate-with-feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        execution_result: executionResult,
+                        user_feedback: feedback
+                    })
+                }, 'REGENERATE WITH FEEDBACK');
+                if (response.ok) {
+                    feedbackStatus.innerHTML = '<div class="result success">✅ Improved code generated! See below.</div>';
+                    // Show the improved code in the result area
+                    resultDiv.innerHTML = `<div class="result success">✅ Improved code generated!\n\n${data.generated_code || 'No code generated.'}</div>`;
+                } else {
+                    feedbackStatus.innerHTML = `<div class="result error">❌ Error: ${data.detail || 'Failed to regenerate code'}</div>`;
+                }
+            } catch (error) {
+                feedbackStatus.innerHTML = `<div class="result error">❌ Network Error: ${error.message}</div>`;
+            }
+        }
+
+        // Add example workflow descriptions on page load
+        window.onload = function() {
+            const examples = [
+                "Search for documents about the user's question, then analyze those documents to provide a detailed summary.",
+                "For each sentence in the user input, search for relevant documents, then format results as Question and Answer pairs.",
+                "Search for documents, extract key information using chat completion, then analyze specific documents for deeper insights."
+            ];
+            
+            // You can uncomment this to show examples
+            // document.getElementById('workflowDescription').placeholder = examples[0];
+        };
+    </script>
+</body>
+</html>
