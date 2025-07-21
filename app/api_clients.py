@@ -1,5 +1,27 @@
 """
-Direct API clients using HTTP requests instead of separate client files
+Direct API Clients for External Services
+
+This module provides direct HTTP-based API clients for external services:
+- Anthropic Claude API for AI code generation and chat completion
+- LightOn Paradigm API for document search, analysis, and file management
+
+Key Features:
+    - Direct HTTP requests using aiohttp for async operations
+    - Comprehensive error handling and logging
+    - API key injection for secure communication
+    - Support for all Paradigm API endpoints (search, analysis, file operations)
+    - Polling mechanisms for long-running operations
+    - Backward compatibility layer for existing code
+
+Architecture:
+    - Pure async/await implementation for high performance
+    - Detailed logging for debugging and monitoring
+    - Timeout handling and retry logic where appropriate
+    - Clean separation between Anthropic and Paradigm functionality
+
+Usage:
+    The module exposes both direct functions and mock client classes
+    for backward compatibility with existing code patterns.
 """
 import aiohttp
 import asyncio
@@ -7,16 +29,34 @@ import logging
 from typing import Optional, List, Dict, Any
 from .config import settings
 
-# Set up logging
+# Set up logging for detailed API call tracking
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# ANTHROPIC API CLIENT (Direct HTTP)
+# ANTHROPIC CLAUDE API CLIENT (Direct HTTP)
 # ============================================================================
 
 async def anthropic_generate_code(workflow_description: str, context: Optional[Dict[str, Any]] = None, system_prompt: Optional[str] = None) -> str:
     """
-    Generate Python code from a workflow description using Claude via direct HTTP
+    Generate Python code from a workflow description using Claude via direct HTTP.
+    
+    Creates complete, self-contained workflow code that includes all necessary
+    imports, API clients, and the main execution function. The generated code
+    integrates with both Anthropic and Paradigm APIs.
+    
+    Args:
+        workflow_description: Natural language description of the desired workflow
+        context: Optional context dictionary with additional parameters
+        system_prompt: Optional custom system prompt (uses default if None)
+        
+    Returns:
+        str: Complete Python code ready for execution
+        
+    Raises:
+        Exception: If API call fails or code generation fails
+        
+    Note:
+        Generated code includes placeholder API keys that are replaced during execution
     """
     if not system_prompt:
         system_prompt = """You are a Python code generator for workflow automation. 
@@ -83,7 +123,20 @@ Return only the Python code, no explanations or markdown formatting."""
 
 async def anthropic_chat_completion(prompt: str, system_prompt: Optional[str] = None) -> str:
     """
-    Get a chat completion response from Claude via direct HTTP
+    Get a chat completion response from Claude via direct HTTP.
+    
+    General-purpose chat interface for AI responses. Used for tasks that
+    don't require code generation, such as text analysis or Q&A.
+    
+    Args:
+        prompt: User prompt or question
+        system_prompt: Optional system instructions (default: helpful assistant)
+        
+    Returns:
+        str: AI-generated response text
+        
+    Raises:
+        Exception: If API call fails or response processing fails
     """
     payload = {
         "model": "claude-3-5-sonnet-20241022",
@@ -115,11 +168,16 @@ async def anthropic_chat_completion(prompt: str, system_prompt: Optional[str] = 
         raise Exception(f"Chat completion failed: {str(e)}")
 
 # ============================================================================
-# PARADIGM API CLIENT (Direct HTTP)
+# LIGHTON PARADIGM API CLIENT (Direct HTTP)
 # ============================================================================
 
 def _get_paradigm_headers() -> Dict[str, str]:
-    """Get headers for Paradigm API requests"""
+    """
+    Get standard headers for Paradigm API requests.
+    
+    Returns:
+        dict: Headers including authorization and content type
+    """
     return {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {settings.lighton_api_key}"
@@ -137,7 +195,31 @@ async def paradigm_document_search(
     private: bool = False
 ) -> Dict[str, Any]:
     """
-    Perform document search using LightOn Paradigm API via direct HTTP
+    Perform document search using LightOn Paradigm API via direct HTTP.
+    
+    Searches through uploaded documents using semantic search capabilities.
+    Returns relevant documents with chunks and metadata. Can be scoped to
+    specific workspaces, files, or chat sessions.
+    
+    Args:
+        query: Search query in natural language
+        workspace_ids: Optional list of workspace IDs to search within
+        file_ids: Optional list of specific file IDs to search
+        chat_session_id: Optional chat session for context
+        model: Optional specific model to use
+        company_scope: Whether to search company-wide documents
+        private_scope: Whether to search private documents
+        tool: Tool type (default: "DocumentSearch")
+        private: Whether request is private
+        
+    Returns:
+        dict: Search results with documents, answers, and metadata
+        
+    Raises:
+        Exception: If search API call fails or returns error
+        
+    Note:
+        Comprehensive logging includes query, results count, and document IDs
     """
     endpoint = f"{settings.lighton_base_url}{settings.lighton_docsearch_endpoint}"
     
@@ -211,7 +293,25 @@ async def paradigm_document_analysis(
     private: bool = False
 ) -> Dict[str, Any]:
     """
-    Perform document analysis using LightOn Paradigm API via direct HTTP
+    Initiate document analysis using LightOn Paradigm API via direct HTTP.
+    
+    Starts an analysis job for specific documents. Returns a chat_response_id
+    that can be used to poll for results. Analysis is performed asynchronously.
+    
+    Args:
+        query: Analysis question or instruction
+        document_ids: List of document IDs to analyze
+        model: Optional specific model to use for analysis
+        private: Whether analysis should be private
+        
+    Returns:
+        dict: Analysis initiation response with chat_response_id
+        
+    Raises:
+        Exception: If analysis API call fails or returns error
+        
+    Note:
+        This starts the analysis - use paradigm_get_analysis_result to retrieve results
     """
     endpoint = f"{settings.lighton_base_url}/api/v2/chat/document-analysis"
     
@@ -257,7 +357,22 @@ async def paradigm_document_analysis(
 
 async def paradigm_get_analysis_result(chat_response_id: int) -> Dict[str, Any]:
     """
-    Retrieve the results of a document analysis request via direct HTTP
+    Retrieve the results of a document analysis request via direct HTTP.
+    
+    Polls the analysis endpoint to get results from a previously initiated
+    document analysis. May return "not found" if analysis is still processing.
+    
+    Args:
+        chat_response_id: ID returned from paradigm_document_analysis
+        
+    Returns:
+        dict: Analysis results with status and detailed analysis
+        
+    Raises:
+        Exception: If retrieval fails or analysis result not found
+        
+    Note:
+        Use paradigm_analyze_documents_with_polling for automatic polling
     """
     endpoint = f"{settings.lighton_base_url}/api/v2/chat/document-analysis/{chat_response_id}"
     

@@ -1,6 +1,29 @@
 #!/usr/bin/env python3
 """
-Start both backend and frontend together
+Full System Startup Script
+
+This script starts both the FastAPI backend and frontend servers together
+for local development and testing. It manages both processes and provides
+clean shutdown when interrupted.
+
+Features:
+    - Starts FastAPI backend on port 8000
+    - Starts frontend server on port 3000
+    - Handles process lifecycle management
+    - Graceful shutdown with Ctrl+C
+    - Process cleanup on exit
+
+Usage:
+    python start_full_system.py
+    
+    Then open http://localhost:3000 for the frontend
+    API documentation available at http://localhost:8000/docs
+
+Architecture:
+    - Subprocess management for parallel process execution
+    - Signal handling for clean shutdown
+    - Error handling and process recovery
+    - Cross-platform compatibility
 """
 import subprocess
 import time
@@ -10,7 +33,21 @@ import sys
 from pathlib import Path
 
 def start_full_system():
-    """Start both FastAPI backend and frontend server"""
+    """
+    Start both FastAPI backend and frontend server in parallel.
+    
+    Manages the lifecycle of both processes, handles startup sequencing,
+    and provides clean shutdown functionality. Monitors both processes
+    and performs cleanup on exit.
+    
+    Process Flow:
+        1. Start FastAPI backend server
+        2. Wait for backend to initialize
+        3. Start frontend server
+        4. Monitor both processes
+        5. Handle shutdown signals
+        6. Clean up processes on exit
+    """
     
     backend_process = None
     frontend_process = None

@@ -1,3 +1,31 @@
+"""
+Main FastAPI Application for Workflow Automation System
+
+This is the core FastAPI application that provides REST API endpoints for:
+- Creating workflows from natural language descriptions
+- Executing workflows with user input and file attachments
+- Managing file uploads and processing
+- Handling workflow feedback and regeneration
+
+Key Features:
+    - AI-powered workflow generation using Anthropic Claude
+    - Document processing via LightOn Paradigm API
+    - File upload and management
+    - Real-time workflow execution with timeout handling
+    - Comprehensive CORS support for web frontends
+    - Error handling and logging
+
+API Endpoints:
+    - POST /workflows - Create new workflow
+    - GET /workflows/{id} - Get workflow details
+    - POST /workflows/{id}/execute - Execute workflow
+    - POST /files/upload - Upload files for processing
+    - File management endpoints for questioning and deletion
+    
+The application supports cross-domain deployment with multiple frontend origins
+and provides comprehensive API documentation via FastAPI's automatic OpenAPI integration.
+"""
+
 import asyncio
 import logging
 import uuid
@@ -28,11 +56,11 @@ from .workflow.executor import workflow_executor
 from .workflow.models import Workflow, WorkflowExecution, ExecutionStatus
 from .api_clients import paradigm_client  # Updated import
 
-# Configure logging
+# Configure logging based on debug settings
 logging.basicConfig(level=logging.INFO if settings.debug else logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+# Create FastAPI app with comprehensive metadata
 app = FastAPI(
     title="Workflow Automation API",
     description="API for creating and executing automated workflows using AI",
@@ -40,19 +68,19 @@ app = FastAPI(
     debug=settings.debug
 )
 
-# Add CORS middleware
+# Add CORS middleware for cross-domain frontend support
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000", 
+        "http://localhost:3000",  # Local development
         "http://127.0.0.1:3000",
-        "https://scaffold-ai-test2.vercel.app",
-        "https://*.vercel.app",
-        "https://*.netlify.app",
-        "https://*.github.io",
-        "https://*.surge.sh",
-        "https://*.firebaseapp.com"
-    ],  # Frontend origins
+        "https://scaffold-ai-test2.vercel.app",  # Production frontend
+        "https://*.vercel.app",  # Vercel deployments
+        "https://*.netlify.app",  # Netlify deployments
+        "https://*.github.io",   # GitHub Pages
+        "https://*.surge.sh",    # Surge deployments
+        "https://*.firebaseapp.com"  # Firebase hosting
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -60,7 +88,15 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup_event():
-    """Validate configuration on startup"""
+    """
+    Application startup event handler.
+    
+    Validates configuration settings and ensures all required API keys
+    are present before the application starts accepting requests.
+    
+    Raises:
+        Exception: If required configuration is missing or invalid
+    """
     try:
         settings.validate()
         logger.info("Application started successfully")
@@ -70,7 +106,15 @@ async def startup_event():
 
 @app.get("/", tags=["Health"])
 async def root():
-    """Health check endpoint"""
+    """
+    Health check endpoint.
+    
+    Provides basic service information and status for monitoring.
+    Used by deployment platforms and monitoring systems to verify service health.
+    
+    Returns:
+        dict: Service metadata including version, status, and timestamp
+    """
     return {
         "message": "Workflow Automation API",
         "version": "1.0.0",
@@ -81,7 +125,27 @@ async def root():
 @app.post("/workflows", response_model=WorkflowResponse, tags=["Workflows"])
 async def create_workflow(request: WorkflowCreateRequest):
     """
-    Create a new workflow from a natural language description
+    Create a new workflow from a natural language description.
+    
+    This endpoint uses AI to generate executable Python code from a natural
+    language workflow description. The generated code integrates with both
+    Anthropic and LightOn Paradigm APIs for document processing and analysis.
+    
+    Args:
+        request: Workflow creation request containing description, optional name, and context
+        
+    Returns:
+        WorkflowResponse: Complete workflow details including generated code
+        
+    Raises:
+        HTTPException: 500 if workflow generation fails
+        
+    Example:
+        POST /workflows
+        {
+            \"description\": \"Search documents about AI, then analyze findings\",
+            \"name\": \"AI Research Workflow\"
+        }
     """
     try:
         logger.info(f"Creating workflow: {request.description[:100]}...")
@@ -119,7 +183,20 @@ async def create_workflow(request: WorkflowCreateRequest):
 @app.get("/workflows/{workflow_id}", response_model=WorkflowResponse, tags=["Workflows"])
 async def get_workflow(workflow_id: str):
     """
-    Get details of a specific workflow
+    Retrieve details of a specific workflow by ID.
+    
+    Returns complete workflow information including generated code,
+    current status, and metadata. Used to check workflow status
+    and retrieve generated code for inspection.
+    
+    Args:
+        workflow_id: Unique identifier of the workflow to retrieve
+        
+    Returns:
+        WorkflowResponse: Complete workflow details
+        
+    Raises:
+        HTTPException: 404 if workflow not found, 500 for other errors
     """
     try:
         workflow = workflow_executor.get_workflow(workflow_id)
@@ -152,7 +229,24 @@ async def get_workflow(workflow_id: str):
 @app.post("/workflows/{workflow_id}/execute", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
     """
-    Execute a workflow with user input
+    Execute a workflow with user input and optional file attachments.
+    
+    Runs the generated workflow code with the provided user input.
+    Supports file attachments that can be processed within the workflow.
+    Execution is performed in a secure, isolated environment with timeout protection.
+    
+    Args:
+        workflow_id: ID of the workflow to execute
+        request: Execution request with user input and optional file IDs
+        
+    Returns:
+        WorkflowExecutionResponse: Execution results with status and timing
+        
+    Raises:
+        HTTPException: 400 for validation errors, 500 for execution failures
+        
+    Note:
+        Execution timeout is configured via settings.max_execution_time (default: 5 minutes)
     """
     try:
         logger.info(f"Executing workflow {workflow_id} with input: {request.user_input[:100]}...")
@@ -188,7 +282,21 @@ async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
 @app.get("/workflows/{workflow_id}/executions/{execution_id}", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def get_execution(workflow_id: str, execution_id: str):
     """
-    Get details of a specific workflow execution
+    Retrieve details of a specific workflow execution.
+    
+    Returns execution results, status, timing information, and any errors
+    that occurred during execution. Used for monitoring and debugging
+    workflow executions.
+    
+    Args:
+        workflow_id: ID of the parent workflow
+        execution_id: Unique identifier of the execution to retrieve
+        
+    Returns:
+        WorkflowExecutionResponse: Complete execution details
+        
+    Raises:
+        HTTPException: 404 if execution not found, 400 if execution doesn't belong to workflow
     """
     try:
         execution = workflow_executor.get_execution(execution_id)
@@ -223,7 +331,7 @@ async def get_execution(workflow_id: str, execution_id: str):
             detail=f"Failed to get execution: {str(e)}"
         )
 
-# File upload endpoints
+# File upload and management endpoints
 
 @app.post("/files/upload", response_model=FileUploadResponse, tags=["Files"])
 async def upload_file(
@@ -232,7 +340,25 @@ async def upload_file(
     workspace_id: Optional[int] = Form(None)
 ):
     """
-    Upload a file to Paradigm for use in workflows
+    Upload a file to Paradigm for document processing and analysis.
+    
+    Files are automatically processed, indexed, and made available for use
+    in workflows. Supports various document formats and collection types
+    for organizing files within different scopes.
+    
+    Args:
+        file: The file to upload (multipart/form-data)
+        collection_type: Collection scope - 'private', 'company', or 'workspace'
+        workspace_id: Required if collection_type is 'workspace'
+        
+    Returns:
+        FileUploadResponse: File metadata including ID, size, and processing status
+        
+    Raises:
+        HTTPException: 500 if upload fails
+        
+    Note:
+        Files are processed asynchronously and may take time to become fully searchable
     """
     try:
         logger.info(f"Uploading file: {file.filename}")
@@ -262,7 +388,20 @@ async def upload_file(
 @app.get("/files/{file_id}", response_model=FileInfoResponse, tags=["Files"])
 async def get_file_info(file_id: int, include_content: bool = False):
     """
-    Get information about an uploaded file
+    Retrieve metadata and optionally content of an uploaded file.
+    
+    Provides file information including processing status, size, and creation time.
+    Can optionally include the full file content for inspection.
+    
+    Args:
+        file_id: Unique identifier of the file
+        include_content: Whether to include file content in response
+        
+    Returns:
+        FileInfoResponse: File metadata and optionally content
+        
+    Raises:
+        HTTPException: 500 if retrieval fails
     """
     try:
         result = await paradigm_client.get_file_info(file_id, include_content)
@@ -278,7 +417,20 @@ async def get_file_info(file_id: int, include_content: bool = False):
 @app.post("/files/{file_id}/ask", response_model=FileQuestionResponse, tags=["Files"])
 async def ask_question_about_file(file_id: int, request: FileQuestionRequest):
     """
-    Ask a question about a specific uploaded file
+    Ask a natural language question about a specific uploaded file.
+    
+    Uses AI to analyze the file content and provide answers to user questions.
+    Returns both the answer and relevant document chunks for transparency.
+    
+    Args:
+        file_id: ID of the file to question
+        request: Question request containing the natural language query
+        
+    Returns:
+        FileQuestionResponse: AI-generated answer with supporting document chunks
+        
+    Raises:
+        HTTPException: 500 if question processing fails
     """
     try:
         result = await paradigm_client.ask_question_about_file(file_id, request.question)
@@ -294,7 +446,22 @@ async def ask_question_about_file(file_id: int, request: FileQuestionRequest):
 @app.delete("/files/{file_id}", tags=["Files"])
 async def delete_file(file_id: int):
     """
-    Delete an uploaded file
+    Delete an uploaded file from the system.
+    
+    Permanently removes the file and all associated metadata from Paradigm.
+    The file will no longer be available for workflows or questioning.
+    
+    Args:
+        file_id: ID of the file to delete
+        
+    Returns:
+        dict: Success status and confirmation message
+        
+    Raises:
+        HTTPException: 500 if deletion fails
+        
+    Warning:
+        This operation is irreversible
     """
     try:
         success = await paradigm_client.delete_file(file_id)
@@ -310,7 +477,23 @@ async def delete_file(file_id: int):
 @app.post("/workflows-with-files", response_model=WorkflowResponse, tags=["Workflows"])
 async def create_workflow_with_files(request: WorkflowWithFilesRequest):
     """
-    Create a workflow that can use uploaded files
+    Create a workflow that has access to specific uploaded files.
+    
+    Generates workflow code that can process and analyze the specified
+    uploaded files. The file IDs are embedded in the workflow context
+    so the generated code can reference them directly.
+    
+    Args:
+        request: Workflow creation request with file IDs to attach
+        
+    Returns:
+        WorkflowResponse: Complete workflow details with file access capabilities
+        
+    Raises:
+        HTTPException: 500 if workflow generation fails
+        
+    Note:
+        Generated workflow will have access to global 'attached_file_ids' variable
     """
     try:
         logger.info(f"Creating workflow with files: {request.uploaded_file_ids}")
@@ -354,7 +537,26 @@ async def create_workflow_with_files(request: WorkflowWithFilesRequest):
 @app.post("/workflows/{workflow_id}/regenerate-with-feedback", response_model=WorkflowResponse, tags=["Workflows"])
 async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowFeedbackRequest = Body(...)):
     """
-    Regenerate workflow code using execution result and user feedback
+    Improve workflow code based on execution results and user feedback.
+    
+    Takes the original workflow description, execution results, and user feedback
+    to generate improved code that addresses identified issues. Uses AI to
+    understand what went wrong and how to fix it.
+    
+    Args:
+        workflow_id: ID of the workflow to improve
+        request: Feedback request with execution results and improvement suggestions
+        
+    Returns:
+        WorkflowResponse: Updated workflow with improved generated code
+        
+    Raises:
+        HTTPException: 404 if workflow not found, 500 if regeneration fails
+        
+    Example Use Case:
+        - User executes workflow and gets unexpected results
+        - User provides feedback: "The search query was too broad, be more specific"
+        - System regenerates code with more targeted search logic
     """
     workflow = workflow_executor.get_workflow(workflow_id)
     if not workflow:
@@ -383,7 +585,23 @@ async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowF
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
-    """Global exception handler"""
+    """
+    Global exception handler for unhandled errors.
+    
+    Catches all unhandled exceptions and returns a consistent error response.
+    In debug mode, includes detailed error information for troubleshooting.
+    In production mode, returns generic error messages to avoid information leakage.
+    
+    Args:
+        request: The HTTP request that caused the exception
+        exc: The unhandled exception
+        
+    Returns:
+        ErrorResponse: Standardized error response with timestamp
+        
+    Note:
+        All exceptions are logged for monitoring and debugging purposes
+    """
     logger.error(f"Unhandled exception: {str(exc)}")
     return ErrorResponse(
         error="Internal server error",
@@ -391,8 +609,10 @@ async def global_exception_handler(request, exc):
         timestamp=datetime.utcnow()
     )
 
+# Development server entry point
 if __name__ == "__main__":
     import uvicorn
+    # Run the development server with auto-reload in debug mode
     uvicorn.run(
         "app.main:app",
         host=settings.host,

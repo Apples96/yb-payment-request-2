@@ -1,3 +1,42 @@
+<!--
+Workflow Automation System Frontend
+
+This is the main frontend interface for the AI-powered workflow automation system.
+It provides a comprehensive web UI for:
+
+1. Workflow Creation:
+   - Natural language workflow descriptions
+   - AI-powered code generation using Anthropic Claude
+   - Real-time status updates and code preview
+
+2. File Management:
+   - Drag-and-drop file uploads
+   - File attachment to workflow queries
+   - Integration with LightOn Paradigm API for document processing
+
+3. Workflow Execution:
+   - Execute workflows with user queries
+   - Support for attached documents
+   - Real-time execution monitoring with detailed logs
+
+4. Monitoring and Debugging:
+   - Comprehensive API call logging
+   - Step-by-step workflow execution tracking
+   - Error handling and user feedback
+
+Key Features:
+- Cross-domain API integration with CORS support
+- Real-time logging with color-coded output
+- Responsive design with modern CSS styling
+- File drag-and-drop with visual feedback
+- Workflow feedback and regeneration capabilities
+
+Architecture:
+- Pure vanilla JavaScript (no frameworks)
+- REST API integration with fetch()
+- Modular function design for maintainability
+- Comprehensive error handling and user feedback
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +45,18 @@
     <title>Workflow Automation Test</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <style>
+        /* 
+         * CSS Styles for Workflow Automation Interface
+         * 
+         * Provides a clean, modern interface with:
+         * - Responsive design for desktop and mobile
+         * - Color-coded status indicators
+         * - Terminal-style logging interface
+         * - Drag-and-drop file upload styling
+         * - Button states and hover effects
+         */
+        
+        /* Base layout and typography */
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
@@ -252,12 +303,54 @@
     </div>
 
     <script>
-        const API_BASE = 'https://scaffold-ai-test2.vercel.app';
-        let currentWorkflowId = null;
-        let logCounter = 0;
-        let queryAttachedFiles = [];  // Store files attached to current query
+        /*
+         * Workflow Automation Frontend JavaScript
+         * 
+         * This script provides the complete frontend functionality for the workflow
+         * automation system, including:
+         * 
+         * 1. API Integration:
+         *    - RESTful API calls to backend services
+         *    - Error handling and response processing
+         *    - Cross-domain request handling
+         * 
+         * 2. File Management:
+         *    - Drag-and-drop file uploads
+         *    - File attachment to queries
+         *    - File deletion and management
+         * 
+         * 3. Logging System:
+         *    - Real-time API call logging
+         *    - Color-coded log entries by type
+         *    - Detailed workflow execution tracking
+         * 
+         * 4. User Interface:
+         *    - Dynamic UI updates based on state
+         *    - Form validation and user feedback
+         *    - Responsive design interactions
+         * 
+         * Architecture:
+         * - Event-driven programming model
+         * - Modular functions for maintainability
+         * - Global state management for workflow tracking
+         * - Comprehensive error handling throughout
+         */
+        
+        // Global configuration and state variables
+        const API_BASE = 'http://localhost:8000'  // Local backend API base URL
+        // const API_BASE = 'https://scaffold-ai-test2.vercel.app';  // Vercel deployed backend API base URL
+        let currentWorkflowId = null;    // Currently active workflow ID
+        let logCounter = 0;              // Counter for log entry IDs
+        let queryAttachedFiles = [];     // Files attached to current query
 
-        // Query-specific file upload functions
+        // =============================================================
+        // FILE UPLOAD AND MANAGEMENT FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Handle drag-and-drop file uploads for query attachments.
+         * Prevents default drag behavior and processes dropped files.
+         */
         function handleQueryDrop(event) {
             event.preventDefault();
             event.stopPropagation();
@@ -269,6 +362,10 @@
             uploadQueryFiles(files);
         }
 
+        /**
+         * Handle drag-over events for file upload areas.
+         * Provides visual feedback during drag operations.
+         */
         function handleDragOver(event) {
             event.preventDefault();
             event.stopPropagation();
@@ -279,6 +376,10 @@
             }
         }
 
+        /**
+         * Handle drag-leave events for file upload areas.
+         * Removes visual feedback when drag leaves the area.
+         */
         function handleDragLeave(event) {
             event.preventDefault();
             event.stopPropagation();
@@ -289,11 +390,21 @@
             }
         }
 
+        /**
+         * Handle file selection from file input element.
+         * Processes files selected via browse button.
+         */
         function handleQueryFileSelect(event) {
             const files = Array.from(event.target.files);
             uploadQueryFiles(files);
         }
 
+        /**
+         * Upload files to the backend and attach them to queries.
+         * Handles multiple files, updates UI, and manages error states.
+         * 
+         * @param {FileList} files - Files to upload
+         */
         async function uploadQueryFiles(files) {
             const statusDiv = document.getElementById('queryUploadStatus');
             const filesList = document.getElementById('queryFilesList');
@@ -347,6 +458,12 @@
             document.getElementById('queryFileInput').value = '';
         }
 
+        /**
+         * Remove a file attachment from the current query.
+         * Deletes the file from backend and updates local state.
+         * 
+         * @param {number} fileId - ID of the file to remove
+         */
         async function removeQueryFile(fileId) {
             if (!confirm('Are you sure you want to remove this attachment?')) return;
             
@@ -381,7 +498,18 @@
             }
         }
 
-        // Logging functions
+        // =============================================================
+        // LOGGING AND MONITORING FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Add a new log entry to the monitoring console.
+         * Provides real-time feedback on API calls and workflow execution.
+         * 
+         * @param {string} message - Log message to display
+         * @param {string} type - Log type for color coding
+         * @returns {number} Log entry ID for potential updates
+         */
         function addLog(message, type = 'info') {
             const logsContainer = document.getElementById('logsContainer');
             const timestamp = new Date().toLocaleTimeString();
@@ -415,6 +543,14 @@
             return logId;
         }
 
+        /**
+         * Update an existing log entry with new information.
+         * Used to update status of ongoing operations.
+         * 
+         * @param {number} logId - ID of log entry to update
+         * @param {string} message - New message content
+         * @param {string} type - Log type for color coding
+         */
         function updateLog(logId, message, type = 'response') {
             const logEntry = document.getElementById(`log-${logId}`);
             if (logEntry) {
@@ -429,6 +565,9 @@
             }
         }
 
+        /**
+         * Clear all log entries and reset the monitoring console.
+         */
         function clearLogs() {
             const logsContainer = document.getElementById('logsContainer');
             logsContainer.innerHTML = `
@@ -440,7 +579,19 @@
             logCounter = 0;
         }
 
-        // Enhanced API call wrapper with logging
+        // =============================================================
+        // API INTEGRATION FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Enhanced fetch wrapper with comprehensive logging.
+         * Logs all API calls, responses, and errors for debugging.
+         * 
+         * @param {string} url - API endpoint URL
+         * @param {object} options - Fetch options (method, headers, body)
+         * @param {string} description - Human-readable description of the call
+         * @returns {object} Response object with data and status
+         */
         async function loggedFetch(url, options = {}, description = '') {
             const logId = addLog(`🌐 API CALL: ${description || url}`, 'api');
             
@@ -496,6 +647,14 @@
             }
         }
 
+        // =============================================================
+        // WORKFLOW MANAGEMENT FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Create a new workflow from user description.
+         * Calls AI service to generate executable code from natural language.
+         */
         async function createWorkflow() {
             const description = document.getElementById('workflowDescription').value.trim();
             const name = document.getElementById('workflowName').value.trim();
@@ -537,6 +696,10 @@
             }
         }
 
+        /**
+         * Execute a workflow with user query and optional file attachments.
+         * Runs the generated workflow code and displays results with detailed logging.
+         */
         async function executeWorkflowWithQuery() {
             if (!currentWorkflowId) {
                 alert('Please create a workflow first');
@@ -723,6 +886,13 @@
             }
         }
 
+        /**
+         * Display result messages in the UI with appropriate styling.
+         * 
+         * @param {Element} element - DOM element to display result in
+         * @param {string} message - Message to display
+         * @param {string} type - Result type (success, error, loading)
+         */
         function showResult(element, message, type) {
             element.innerHTML = `<div class="result ${type}">${message}</div>`;
             // Add feedback form after showing result if it's a workflow execution result
@@ -738,6 +908,10 @@
             }
         }
 
+        /**
+         * Submit user feedback to improve workflow code.
+         * Uses execution results and feedback to regenerate better code.
+         */
         async function submitFeedback() {
             const feedback = document.getElementById('feedbackText').value.trim();
             const resultDiv = document.getElementById('testResult');
@@ -772,7 +946,13 @@
             }
         }
 
-        // Add example workflow descriptions on page load
+        // =============================================================
+        // PAGE INITIALIZATION
+        // =============================================================
+        
+        /**
+         * Initialize the page with example workflows and default state.
+         */
         window.onload = function() {
             const examples = [
                 "Search for documents about the user's question, then analyze those documents to provide a detailed summary.",

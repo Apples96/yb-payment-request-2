@@ -125,9 +125,15 @@ class ParadigmClient:
                         result = await response.json()
                         status = result.get("status", "")
                         if status.lower() in ["completed", "complete", "finished", "success"]:
-                            return result.get("result", "Analysis completed")
+                            analysis_result = result.get("result") or result.get("detailed_analysis") or "Analysis completed"
+                            return analysis_result
                         elif status.lower() in ["failed", "error"]:
                             raise Exception(f"Analysis failed: {status}")
+                    elif response.status == 404:
+                        # Analysis not ready yet, continue polling
+                        pass
+                    else:
+                        raise Exception(f"Polling API error {response.status}: {await response.text()}")
                     
                     await asyncio.sleep(poll_interval)
                     elapsed += poll_interval
@@ -170,13 +176,26 @@ async def execute_workflow(user_input: str) -> str:
 
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
-2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[int], model=None, private=False)
+2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
 3. await anthropic_client.chat_completion(prompt: str)
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
-- Pass these IDs to file_ids parameter in document_search
+- Pass these IDs to file_ids parameter in document_search (omit parameter if no files attached)
 - Extract document IDs from search results for analysis
+
+CORRECT FILE_IDS USAGE:
+search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
+if 'attached_file_ids' in globals() and attached_file_ids:
+    search_kwargs["file_ids"] = attached_file_ids
+search_results = await paradigm_client.document_search(**search_kwargs)
+
+CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
+document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
+
+INCORRECT (DON'T DO THIS):
+file_ids=attached_file_ids if 'attached_file_ids' in globals() else None  # API doesn't accept None
+document_ids = [doc["id"] for doc in search_results.get("documents", [])]  # Should convert to strings
 
 Generate the complete self-contained workflow code that implements the exact logic described."""
         
