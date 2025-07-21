@@ -265,6 +265,170 @@ Generate a complete, self-contained workflow that:
         """
         Regenerate workflow code using feedback and execution result
         """
+        system_prompt = """You are a Python code generator for workflow automation systems.
+
+CRITICAL INSTRUCTIONS:
+1. Generate ONLY executable Python code - no markdown, no explanations, no comments
+2. The code must define: async def execute_workflow(user_input: str) -> str
+3. Include ALL necessary imports and API client code directly in the workflow
+4. Make the workflow completely self-contained and portable
+
+REQUIRED STRUCTURE:
+```python
+import asyncio
+import aiohttp
+import json
+import logging
+from typing import Optional, List, Dict, Any
+
+# Configuration - replace with your actual values
+LIGHTON_API_KEY = "your_api_key_here"
+LIGHTON_BASE_URL = "https://api.lighton.ai"
+ANTHROPIC_API_KEY = "your_anthropic_api_key_here"
+
+logger = logging.getLogger(__name__)
+
+class ParadigmClient:
+    def __init__(self, api_key: str, base_url: str):
+        self.base_url = base_url
+        self.api_key = api_key
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+    
+    async def document_search(self, query: str, **kwargs) -> Dict[str, Any]:
+        endpoint = f"{self.base_url}/api/v2/chat/document-search"
+        payload = {"query": query, **kwargs}
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(endpoint, json=payload, headers=self.headers) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    raise Exception(f"API error {response.status}: {await response.text()}")
+    
+    async def analyze_documents_with_polling(self, query: str, document_ids: List[str], **kwargs) -> str:
+        # Start analysis
+        endpoint = f"{self.base_url}/api/v2/chat/document-analysis"
+        payload = {"query": query, "document_ids": document_ids, **kwargs}
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(endpoint, json=payload, headers=self.headers) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    chat_response_id = result.get("chat_response_id")
+                else:
+                    raise Exception(f"Analysis API error {response.status}: {await response.text()}")
+        
+        # Poll for results
+        max_wait = 300  # 5 minutes
+        poll_interval = 5
+        elapsed = 0
+        
+        while elapsed < max_wait:
+            endpoint = f"{self.base_url}/api/v2/chat/document-analysis/{chat_response_id}"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(endpoint, headers=self.headers) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        status = result.get("status", "")
+                        if status.lower() in ["completed", "complete", "finished", "success"]:
+                            analysis_result = result.get("result") or result.get("detailed_analysis") or "Analysis completed"
+                            return analysis_result
+                        elif status.lower() in ["failed", "error"]:
+                            raise Exception(f"Analysis failed: {status}")
+                    elif response.status == 404:
+                        # Analysis not ready yet, continue polling
+                        pass
+                    else:
+                        raise Exception(f"Polling API error {response.status}: {await response.text()}")
+                    
+                    await asyncio.sleep(poll_interval)
+                    elapsed += poll_interval
+        
+        raise Exception("Analysis timed out")
+
+class AnthropicClient:
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.base_url = "https://api.anthropic.com/v1/messages"
+        self.headers = {
+            "Content-Type": "application/json",
+            "X-API-Key": self.api_key,
+            "anthropic-version": "2023-06-01"
+        }
+    
+    async def chat_completion(self, prompt: str) -> str:
+        payload = {
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 1000,
+            "messages": [{"role": "user", "content": prompt}]
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(self.base_url, json=payload, headers=self.headers) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result["content"][0]["text"]
+                else:
+                    raise Exception(f"Anthropic API error {response.status}: {await response.text()}")
+
+# Initialize clients
+paradigm_client = ParadigmClient(LIGHTON_API_KEY, LIGHTON_BASE_URL)
+anthropic_client = AnthropicClient(ANTHROPIC_API_KEY)
+
+async def execute_workflow(user_input: str) -> str:
+    # Your workflow implementation here
+    pass
+```
+
+IMPORTANT LIBRARY RESTRICTIONS:
+- Only use built-in Python libraries (asyncio, json, logging, typing, re, etc.)
+- Only use aiohttp for HTTP requests (already included in template)
+- DO NOT import external libraries like nltk, requests, pandas, numpy, etc.
+- For text processing, use built-in string methods and 're' module instead of nltk
+- For sentence splitting, use simple regex: re.split(r'[.!?]+', text)
+
+AVAILABLE API METHODS:
+1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
+2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
+3. await anthropic_client.chat_completion(prompt: str)
+
+WORKFLOW ACCESS TO ATTACHED FILES:
+- Use global variable 'attached_file_ids: List[int]' when files are attached
+- Pass these IDs to file_ids parameter in document_search (omit parameter if no files attached)
+- Extract document IDs from search results for analysis
+
+CORRECT FILE_IDS USAGE:
+search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
+if 'attached_file_ids' in globals() and attached_file_ids:
+    search_kwargs["file_ids"] = attached_file_ids
+search_results = await paradigm_client.document_search(**search_kwargs)
+
+CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
+document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
+
+CORRECT TEXT PROCESSING (using built-in libraries):
+import re
+def split_sentences(text):
+    sentences = re.split(r'[.!?]+', text)
+    return [s.strip() for s in sentences if s.strip()]
+
+CORRECT SEARCH RESULT USAGE:
+search_result = await paradigm_client.document_search(**search_kwargs)
+# Use the AI-generated answer from search results
+answer = search_result.get("answer", "No answer provided")
+# Don't try to extract raw document content - use the answer field
+
+INCORRECT (DON'T DO THIS):
+file_ids=attached_file_ids if 'attached_file_ids' in globals() else None  # API doesn't accept None
+document_ids = [doc["id"] for doc in search_results.get("documents", [])]  # Should convert to strings
+import nltk  # External library not available
+answer = search_result["documents"][0].get("content", "")  # Raw content extraction
+
+Generate the complete self-contained workflow code that implements the exact logic described."""
+        
         prompt = f"""
 ORIGINAL WORKFLOW DESCRIPTION:
 {workflow.description}
@@ -285,6 +449,7 @@ Based on the original description, the code that was generated, the actual execu
         response = self.anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=4000,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}]
         )
         
