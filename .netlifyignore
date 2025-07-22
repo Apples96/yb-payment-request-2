@@ -1,13 +1,12 @@
-# Ignore Python backend files for frontend-only deployment
-app/
-requirements.txt
+# Ignore Python-related files for frontend deployment
 runtime.txt
-vercel.json
-DEPLOYMENT.md
+requirements.txt
 *.py
-venv/
 __pycache__/
+venv/
+.venv/
+app/
+api/
+start_full_system.py
+start.sh
 .env
-.claude/
-start*.py
-test_*.py 
