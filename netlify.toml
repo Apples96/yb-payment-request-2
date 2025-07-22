@@ -1,13 +1,11 @@
 [build]
   publish = "frontend"
-  command = ""
+  command = "echo 'Static frontend deployment'"
 
-# No build command needed for static site
 [build.environment]
   NODE_VERSION = "18"
 
-# Handle client-side routing
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200

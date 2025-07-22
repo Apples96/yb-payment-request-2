@@ -1,13 +1,7 @@
 {
   "name": "workflow-automation-frontend",
   "version": "1.0.0",
-  "description": "Frontend for AI Workflow Automation System",
-  "private": true,
   "scripts": {
-    "build": "echo 'Static site - no build required'",
-    "start": "echo 'Static site - serve from frontend directory'"
-  },
-  "keywords": ["workflow", "automation", "ai", "frontend"],
-  "author": "Apples96",
-  "license": "MIT"
-} 
+    "build": "echo 'Static frontend deployment'"
+  }
+}
