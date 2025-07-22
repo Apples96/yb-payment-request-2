@@ -242,6 +242,15 @@ Architecture:
         .remove-file:hover {
             background: #c82333;
         }
+        .result.success[data-regenerated="true"] {
+            border-left: 4px solid #ff9500;
+            background: linear-gradient(90deg, #e6f3ff 0%, #f0f8ff 100%);
+        }
+        .result.success[data-regenerated="true"]::before {
+            content: "🔄 REGENERATED • ";
+            font-weight: bold;
+            color: #ff9500;
+        }
     </style>
 </head>
 <body>
@@ -935,9 +944,12 @@ Architecture:
                     })
                 }, 'REGENERATE WITH FEEDBACK');
                 if (response.ok) {
-                    feedbackStatus.innerHTML = '<div class="result success">✅ Improved code generated! See below.</div>';
-                    // Show the improved code in the result area
-                    resultDiv.innerHTML = `<div class="result success">✅ Improved code generated!\n\n${data.generated_code || 'No code generated.'}</div>`;
+                    feedbackStatus.innerHTML = '<div class="result success">✅ Improved code generated! See above.</div>';
+                    
+                    // Show the improved code in the workflow creation section
+                    const workflowResultDiv = document.getElementById('workflowResult');
+                    const resultMessage = `🔄 Workflow Regenerated with Feedback\n\nID: ${data.id}\nName: ${data.name || 'Unnamed'}\nStatus: ${data.status}\n\nGenerated Code:\n${data.generated_code || 'No code generated'}`;
+                    workflowResultDiv.innerHTML = `<div class="result success" data-regenerated="true">${resultMessage}</div>`;
                 } else {
                     feedbackStatus.innerHTML = `<div class="result error">❌ Error: ${data.detail || 'Failed to regenerate code'}</div>`;
                 }

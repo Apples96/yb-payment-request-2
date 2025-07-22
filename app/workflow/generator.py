@@ -75,7 +75,6 @@ from typing import Optional, List, Dict, Any
 # Configuration - replace with your actual values
 LIGHTON_API_KEY = "your_api_key_here"
 LIGHTON_BASE_URL = "https://api.lighton.ai"
-ANTHROPIC_API_KEY = "your_anthropic_api_key_here"
 
 logger = logging.getLogger(__name__)
 
@@ -139,35 +138,27 @@ class ParadigmClient:
                     elapsed += poll_interval
         
         raise Exception("Analysis timed out")
-
-class AnthropicClient:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://api.anthropic.com/v1/messages"
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-API-Key": self.api_key,
-            "anthropic-version": "2023-06-01"
-        }
     
-    async def chat_completion(self, prompt: str) -> str:
+    async def chat_completion(self, prompt: str, model: str = "Alfred 4.2") -> str:
+        endpoint = f"{self.base_url}/api/v2/chat/completions"
         payload = {
-            "model": "claude-3-5-sonnet-20241022",
-            "max_tokens": 1000,
-            "messages": [{"role": "user", "content": prompt}]
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
         }
         
         async with aiohttp.ClientSession() as session:
-            async with session.post(self.base_url, json=payload, headers=self.headers) as response:
+            async with session.post(endpoint, json=payload, headers=self.headers) as response:
                 if response.status == 200:
                     result = await response.json()
-                    return result["content"][0]["text"]
+                    return result["choices"][0]["message"]["content"]
                 else:
-                    raise Exception(f"Anthropic API error {response.status}: {await response.text()}")
+                    raise Exception(f"Paradigm chat completion API error {response.status}: {await response.text()}")
 
 # Initialize clients
 paradigm_client = ParadigmClient(LIGHTON_API_KEY, LIGHTON_BASE_URL)
-anthropic_client = AnthropicClient(ANTHROPIC_API_KEY)
 
 async def execute_workflow(user_input: str) -> str:
     # Your workflow implementation here
@@ -184,12 +175,13 @@ IMPORTANT LIBRARY RESTRICTIONS:
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
-3. await anthropic_client.chat_completion(prompt: str)
+3. await paradigm_client.chat_completion(prompt: str, model: str = "Alfred 4.2")
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
 - Pass these IDs to file_ids parameter in document_search (omit parameter if no files attached)
-- Extract document IDs from search results for analysis
+- For direct document analysis: attached_file_ids ARE the document IDs - use them directly
+- Extract document IDs from search results for analysis ONLY when searching, not when using attached files
 
 CORRECT FILE_IDS USAGE:
 search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
@@ -199,6 +191,7 @@ search_results = await paradigm_client.document_search(**search_kwargs)
 
 CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
+# OR for attached files: document_ids = [str(file_id) for file_id in attached_file_ids]
 
 CORRECT TEXT PROCESSING (using built-in libraries):
 import re
@@ -284,7 +277,6 @@ from typing import Optional, List, Dict, Any
 # Configuration - replace with your actual values
 LIGHTON_API_KEY = "your_api_key_here"
 LIGHTON_BASE_URL = "https://api.lighton.ai"
-ANTHROPIC_API_KEY = "your_anthropic_api_key_here"
 
 logger = logging.getLogger(__name__)
 
@@ -348,35 +340,27 @@ class ParadigmClient:
                     elapsed += poll_interval
         
         raise Exception("Analysis timed out")
-
-class AnthropicClient:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://api.anthropic.com/v1/messages"
-        self.headers = {
-            "Content-Type": "application/json",
-            "X-API-Key": self.api_key,
-            "anthropic-version": "2023-06-01"
-        }
     
-    async def chat_completion(self, prompt: str) -> str:
+    async def chat_completion(self, prompt: str, model: str = "Alfred 4.2") -> str:
+        endpoint = f"{self.base_url}/api/v2/chat/completions"
         payload = {
-            "model": "claude-3-5-sonnet-20241022",
-            "max_tokens": 1000,
-            "messages": [{"role": "user", "content": prompt}]
+            "model": model,
+            "messages": [
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
         }
         
         async with aiohttp.ClientSession() as session:
-            async with session.post(self.base_url, json=payload, headers=self.headers) as response:
+            async with session.post(endpoint, json=payload, headers=self.headers) as response:
                 if response.status == 200:
                     result = await response.json()
-                    return result["content"][0]["text"]
+                    return result["choices"][0]["message"]["content"]
                 else:
-                    raise Exception(f"Anthropic API error {response.status}: {await response.text()}")
+                    raise Exception(f"Paradigm chat completion API error {response.status}: {await response.text()}")
 
 # Initialize clients
 paradigm_client = ParadigmClient(LIGHTON_API_KEY, LIGHTON_BASE_URL)
-anthropic_client = AnthropicClient(ANTHROPIC_API_KEY)
 
 async def execute_workflow(user_input: str) -> str:
     # Your workflow implementation here
@@ -393,12 +377,13 @@ IMPORTANT LIBRARY RESTRICTIONS:
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
-3. await anthropic_client.chat_completion(prompt: str)
+3. await paradigm_client.chat_completion(prompt: str, model: str = "Alfred 4.2")
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
 - Pass these IDs to file_ids parameter in document_search (omit parameter if no files attached)
-- Extract document IDs from search results for analysis
+- For direct document analysis: attached_file_ids ARE the document IDs - use them directly
+- Extract document IDs from search results for analysis ONLY when searching, not when using attached files
 
 CORRECT FILE_IDS USAGE:
 search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
@@ -408,6 +393,7 @@ search_results = await paradigm_client.document_search(**search_kwargs)
 
 CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
+# OR for attached files: document_ids = [str(file_id) for file_id in attached_file_ids]
 
 CORRECT TEXT PROCESSING (using built-in libraries):
 import re
