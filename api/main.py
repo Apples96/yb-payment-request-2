@@ -33,7 +33,8 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
 
@@ -126,21 +127,38 @@ app.add_middleware(
 )
 
 
-@app.get("/", tags=["Health"])
-async def root():
+@app.get("/", response_class=HTMLResponse, tags=["Frontend"])
+async def serve_frontend():
     """
-    Health check endpoint.
+    Serve the frontend HTML page.
     
-    Provides basic service information and status for monitoring.
-    Used by deployment platforms and monitoring systems to verify service health.
+    Returns the main application interface when accessing the root URL.
+    """
+    try:
+        # Try to read the index.html file from the project root
+        with open("index.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        # Fallback to API info if index.html not found
+        return {
+            "message": "Workflow Automation API",
+            "version": "1.0.0", 
+            "status": "healthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "note": "Frontend file not found - API only mode"
+        }
+
+@app.get("/health", tags=["Health"]) 
+async def health_check():
+    """
+    Health check endpoint for monitoring.
     
-    Returns:
-        dict: Service metadata including version, status, and timestamp
+    Provides service status information for deployment platforms.
     """
     return {
         "message": "Workflow Automation API",
         "version": "1.0.0",
-        "status": "healthy",
+        "status": "healthy", 
         "timestamp": datetime.utcnow().isoformat()
     }
 
