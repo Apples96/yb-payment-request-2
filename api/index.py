@@ -8,5 +8,5 @@ It wraps the FastAPI application to work with Vercel's function format.
 from .main import app
 
 # Export the FastAPI app for Vercel
-# Vercel will automatically handle the ASGI interface
-handler = app
+# For ASGI applications (FastAPI), Vercel expects the app to be exported as 'app'
+# This allows Vercel to handle the ASGI interface automatically
