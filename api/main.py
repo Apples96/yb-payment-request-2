@@ -104,6 +104,10 @@ app = FastAPI(
     debug=settings.debug
 )
 
+# Create API router with /api prefix
+from fastapi import APIRouter
+api_router = APIRouter(prefix="/api")
+
 # Add CORS middleware for cross-domain frontend support
 app.add_middleware(
     CORSMiddleware,
@@ -162,7 +166,7 @@ async def health_check():
         "timestamp": datetime.utcnow().isoformat()
     }
 
-@app.post("/workflows", response_model=WorkflowResponse, tags=["Workflows"])
+@api_router.post("/workflows", response_model=WorkflowResponse, tags=["Workflows"])
 async def create_workflow(request: WorkflowCreateRequest):
     """
     Create a new workflow from a natural language description.
@@ -223,7 +227,7 @@ async def create_workflow(request: WorkflowCreateRequest):
             detail=f"Failed to create workflow: {str(e)}"
         )
 
-@app.get("/workflows/{workflow_id}", response_model=WorkflowResponse, tags=["Workflows"])
+@api_router.get("/workflows/{workflow_id}", response_model=WorkflowResponse, tags=["Workflows"])
 async def get_workflow(workflow_id: str):
     """
     Retrieve details of a specific workflow by ID.
@@ -269,7 +273,7 @@ async def get_workflow(workflow_id: str):
             detail=f"Failed to get workflow: {str(e)}"
         )
 
-@app.post("/workflows/{workflow_id}/execute", response_model=WorkflowExecutionResponse, tags=["Execution"])
+@api_router.post("/workflows/{workflow_id}/execute", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
     """
     Execute a workflow with user input and optional file attachments.
@@ -322,7 +326,7 @@ async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
             detail=f"Failed to execute workflow: {str(e)}"
         )
 
-@app.get("/workflows/{workflow_id}/executions/{execution_id}", response_model=WorkflowExecutionResponse, tags=["Execution"])
+@api_router.get("/workflows/{workflow_id}/executions/{execution_id}", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def get_execution(workflow_id: str, execution_id: str):
     """
     Retrieve details of a specific workflow execution.
@@ -376,7 +380,7 @@ async def get_execution(workflow_id: str, execution_id: str):
 
 # File upload and management endpoints
 
-@app.post("/files/upload", response_model=FileUploadResponse, tags=["Files"])
+@api_router.post("/files/upload", response_model=FileUploadResponse, tags=["Files"])
 async def upload_file(
     file: UploadFile = File(...),
     collection_type: str = Form("private"),
@@ -431,7 +435,7 @@ async def upload_file(
             detail=f"Failed to upload file: {str(e)}"
         )
 
-@app.get("/files/{file_id}", response_model=FileInfoResponse, tags=["Files"])
+@api_router.get("/files/{file_id}", response_model=FileInfoResponse, tags=["Files"])
 async def get_file_info(file_id: int, include_content: bool = False):
     """
     Retrieve metadata and optionally content of an uploaded file.
@@ -463,7 +467,7 @@ async def get_file_info(file_id: int, include_content: bool = False):
             detail=f"Failed to get file info: {str(e)}"
         )
 
-@app.post("/files/{file_id}/ask", response_model=FileQuestionResponse, tags=["Files"])
+@api_router.post("/files/{file_id}/ask", response_model=FileQuestionResponse, tags=["Files"])
 async def ask_question_about_file(file_id: int, request: FileQuestionRequest):
     """
     Ask a natural language question about a specific uploaded file.
@@ -495,7 +499,7 @@ async def ask_question_about_file(file_id: int, request: FileQuestionRequest):
             detail=f"Failed to ask question: {str(e)}"
         )
 
-@app.delete("/files/{file_id}", tags=["Files"])
+@api_router.delete("/files/{file_id}", tags=["Files"])
 async def delete_file(file_id: int):
     """
     Delete an uploaded file from the system.
@@ -529,7 +533,7 @@ async def delete_file(file_id: int):
             detail=f"Failed to delete file: {str(e)}"
         )
 
-@app.post("/workflows-with-files", response_model=WorkflowResponse, tags=["Workflows"])
+@api_router.post("/workflows-with-files", response_model=WorkflowResponse, tags=["Workflows"])
 async def create_workflow_with_files(request: WorkflowWithFilesRequest):
     """
     Create a workflow that has access to specific uploaded files.
@@ -592,7 +596,7 @@ async def create_workflow_with_files(request: WorkflowWithFilesRequest):
             detail=f"Failed to create workflow with files: {str(e)}"
         )
 
-@app.post("/workflows/{workflow_id}/regenerate-with-feedback", response_model=WorkflowResponse, tags=["Workflows"])
+@api_router.post("/workflows/{workflow_id}/regenerate-with-feedback", response_model=WorkflowResponse, tags=["Workflows"])
 async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowFeedbackRequest = Body(...)):
     """
     Improve workflow code based on execution results and user feedback.
@@ -643,6 +647,9 @@ async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowF
     except Exception as e:
         workflow.update_status("failed", str(e))
         raise HTTPException(status_code=500, detail=f"Failed to regenerate workflow: {str(e)}")
+
+# Include the API router in the main app
+app.include_router(api_router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
