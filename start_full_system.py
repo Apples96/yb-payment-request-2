@@ -59,7 +59,7 @@ def start_full_system():
         # Start FastAPI backend
         print("📡 Starting FastAPI backend on http://localhost:8000...")
         backend_process = subprocess.Popen([
-            sys.executable, "-m", "app.main"
+            sys.executable, "-m", "api.main"
         ], cwd=Path(__file__).parent)
         
         # Wait a moment for backend to start

@@ -12,7 +12,7 @@ source venv/bin/activate
 
 # Start backend in background
 echo "📡 Starting backend server (http://localhost:8000)..."
-python -m app.main &
+python -m api.main &
 BACKEND_PID=$!
 
 # Wait for backend to start

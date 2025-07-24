@@ -616,7 +616,7 @@ if __name__ == "__main__":
     import uvicorn
     # Run the development server with auto-reload in debug mode
     uvicorn.run(
-        "app.main:app",
+        "api.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug
