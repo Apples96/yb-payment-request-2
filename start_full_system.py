@@ -68,8 +68,8 @@ def start_full_system():
         # Start frontend server
         print("🌐 Starting frontend server on http://localhost:3000...")
         frontend_process = subprocess.Popen([
-            sys.executable, "start_frontend.py"
-        ], cwd=Path(__file__).parent)
+            sys.executable, "-m", "http.server", "3000"
+        ], cwd=Path(__file__).parent / "frontend")
         
         print("\n✅ Both servers are running!")
         print("🔗 Open http://localhost:3000 in your browser")
