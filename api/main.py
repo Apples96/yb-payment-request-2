@@ -111,7 +111,9 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "https://scaffold-ai-test2.vercel.app",  # Production frontend
         "https://scaffold-ai-test2-milo-rignells-projects.vercel.app",  # Your current deployment
+        "https://scaffold-ai-test2-fi4dvy1xl-milo-rignells-projects.vercel.app",
         "https://scaffold-ai-test2-tawny.vercel.app",  # Your other deployment
+        "https://scaffold-ai-test2-git-main-milo-rignells-projects.vercel.app/",
         "https://*.vercel.app",  # All Vercel deployments
         "https://*.netlify.app",  # Netlify deployments
         "https://*.github.io",   # GitHub Pages
