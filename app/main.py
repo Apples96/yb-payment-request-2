@@ -75,7 +75,9 @@ app.add_middleware(
         "http://localhost:3000",  # Local development
         "http://127.0.0.1:3000",
         "https://scaffold-ai-test2.vercel.app",  # Production frontend
-        "https://*.vercel.app",  # Vercel deployments
+        "https://scaffold-ai-test2-milo-rignells-projects.vercel.app",  # Your current deployment
+        "https://scaffold-ai-test2-tawny.vercel.app",  # Your other deployment
+        "https://*.vercel.app",  # All Vercel deployments
         "https://*.netlify.app",  # Netlify deployments
         "https://*.github.io",   # GitHub Pages
         "https://*.surge.sh",    # Surge deployments
