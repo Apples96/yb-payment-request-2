@@ -60,6 +60,41 @@ from .api_clients import paradigm_client  # Updated import
 logging.basicConfig(level=logging.INFO if settings.debug else logging.WARNING)
 logger = logging.getLogger(__name__)
 
+# API key validation helpers
+def validate_anthropic_api_key():
+    """
+    Validate that Anthropic API key is available.
+    
+    Returns:
+        bool: True if API key is available
+        
+    Raises:
+        HTTPException: 503 if API key is missing
+    """
+    if not settings.anthropic_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Anthropic API key not configured. Please set ANTHROPIC_API_KEY environment variable."
+        )
+    return True
+
+def validate_lighton_api_key():
+    """
+    Validate that LightOn API key is available.
+    
+    Returns:
+        bool: True if API key is available
+        
+    Raises:
+        HTTPException: 503 if API key is missing
+    """
+    if not settings.lighton_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="LightOn API key not configured. Please set LIGHTON_API_KEY environment variable."
+        )
+    return True
+
 # Create FastAPI app with comprehensive metadata
 app = FastAPI(
     title="Workflow Automation API",
@@ -88,23 +123,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-async def startup_event():
-    """
-    Application startup event handler.
-    
-    Validates configuration settings and ensures all required API keys
-    are present before the application starts accepting requests.
-    
-    Raises:
-        Exception: If required configuration is missing or invalid
-    """
-    try:
-        settings.validate()
-        logger.info("Application started successfully")
-    except Exception as e:
-        logger.error(f"Startup validation failed: {e}")
-        raise e
 
 @app.get("/", tags=["Health"])
 async def root():
@@ -140,7 +158,7 @@ async def create_workflow(request: WorkflowCreateRequest):
         WorkflowResponse: Complete workflow details including generated code
         
     Raises:
-        HTTPException: 500 if workflow generation fails
+        HTTPException: 503 if API keys are missing, 500 if workflow generation fails
         
     Example:
         POST /workflows
@@ -149,6 +167,9 @@ async def create_workflow(request: WorkflowCreateRequest):
             \"name\": \"AI Research Workflow\"
         }
     """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
     try:
         logger.info(f"Creating workflow: {request.description[:100]}...")
         
@@ -357,11 +378,14 @@ async def upload_file(
         FileUploadResponse: File metadata including ID, size, and processing status
         
     Raises:
-        HTTPException: 500 if upload fails
+        HTTPException: 503 if API keys are missing, 500 if upload fails
         
     Note:
         Files are processed asynchronously and may take time to become fully searchable
     """
+    # Validate required API keys
+    validate_lighton_api_key()
+    
     try:
         logger.info(f"Uploading file: {file.filename}")
         
@@ -403,8 +427,11 @@ async def get_file_info(file_id: int, include_content: bool = False):
         FileInfoResponse: File metadata and optionally content
         
     Raises:
-        HTTPException: 500 if retrieval fails
+        HTTPException: 503 if API keys are missing, 500 if retrieval fails
     """
+    # Validate required API keys
+    validate_lighton_api_key()
+    
     try:
         result = await paradigm_client.get_file_info(file_id, include_content)
         return FileInfoResponse(**result)
@@ -432,8 +459,11 @@ async def ask_question_about_file(file_id: int, request: FileQuestionRequest):
         FileQuestionResponse: AI-generated answer with supporting document chunks
         
     Raises:
-        HTTPException: 500 if question processing fails
+        HTTPException: 503 if API keys are missing, 500 if question processing fails
     """
+    # Validate required API keys
+    validate_lighton_api_key()
+    
     try:
         result = await paradigm_client.ask_question_about_file(file_id, request.question)
         return FileQuestionResponse(**result)
@@ -460,11 +490,14 @@ async def delete_file(file_id: int):
         dict: Success status and confirmation message
         
     Raises:
-        HTTPException: 500 if deletion fails
+        HTTPException: 503 if API keys are missing, 500 if deletion fails
         
     Warning:
         This operation is irreversible
     """
+    # Validate required API keys
+    validate_lighton_api_key()
+    
     try:
         success = await paradigm_client.delete_file(file_id)
         return {"success": success, "message": f"File {file_id} deleted successfully"}
@@ -492,11 +525,14 @@ async def create_workflow_with_files(request: WorkflowWithFilesRequest):
         WorkflowResponse: Complete workflow details with file access capabilities
         
     Raises:
-        HTTPException: 500 if workflow generation fails
+        HTTPException: 503 if API keys are missing, 500 if workflow generation fails
         
     Note:
         Generated workflow will have access to global 'attached_file_ids' variable
     """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
     try:
         logger.info(f"Creating workflow with files: {request.uploaded_file_ids}")
         
@@ -553,13 +589,16 @@ async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowF
         WorkflowResponse: Updated workflow with improved generated code
         
     Raises:
-        HTTPException: 404 if workflow not found, 500 if regeneration fails
+        HTTPException: 404 if workflow not found, 503 if API keys are missing, 500 if regeneration fails
         
     Example Use Case:
         - User executes workflow and gets unexpected results
         - User provides feedback: "The search query was too broad, be more specific"
         - System regenerates code with more targeted search logic
     """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
     workflow = workflow_executor.get_workflow(workflow_id)
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
