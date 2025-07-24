@@ -1,10 +1,10 @@
 {
   "functions": {
     "api/index.py": {
-      "runtime": "[email protected]"
+      "runtime": "@vercel/python"
     },
     "api/debug.py": {
-      "runtime": "[email protected]"
+      "runtime": "@vercel/python"
     }
   },
   "routes": [
