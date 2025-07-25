@@ -307,6 +307,12 @@ Architecture:
         <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information...">Search for documents about the user's question, then analyze those documents to provide a detailed summary.</textarea>
         <input type="text" id="workflowName" placeholder="Workflow name (optional)" />
         <button onclick="createWorkflow()">Create Workflow</button>
+        
+        <!-- Tip about document storage -->
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196f3;">
+            <strong>💡 Tip:</strong> If your workflow processes documents, they will be stored in your private Paradigm workspace. To avoid storing documents permanently, add a final step to your workflow description: "Delete all input documents after processing."
+        </div>
+        
         <div id="workflowResult"></div>
     </div>
 
@@ -325,6 +331,7 @@ Architecture:
                 <p>📎 Drag and drop files here or <button onclick="document.getElementById('queryFileInput').click()">browse files</button></p>
                 <input type="file" id="queryFileInput" multiple style="display: none;" onchange="handleQueryFileSelect(event)">
                 <p style="font-size: 12px; color: #666;">Upload documents to analyze with your query</p>
+                <p style="font-size: 11px; color: #888; margin-top: 5px;">Note: In this demo, attached documents will be automatically deleted after workflow execution.</p>
             </div>
             
             <div id="queryUploadStatus"></div>
@@ -754,6 +761,51 @@ if __name__ == "__main__":
             }
         }
 
+        /**
+         * Automatically clean up uploaded documents from Paradigm after workflow testing.
+         * This ensures documents uploaded for testing don't accumulate in the user's workspace.
+         * 
+         * @param {number[]} documentIds - Array of document IDs to delete
+         */
+        async function cleanupUploadedDocuments(documentIds) {
+            if (!documentIds || documentIds.length === 0) {
+                return; // No documents to clean up
+            }
+            
+            addLog(`🧹 Starting automatic cleanup of ${documentIds.length} test document(s)...`, 'info');
+            
+            let cleanupSuccessCount = 0;
+            let cleanupFailCount = 0;
+            
+            for (const documentId of documentIds) {
+                try {
+                    const { response } = await loggedFetch(`${API_BASE}/files/${documentId}`, {
+                        method: 'DELETE'
+                    }, `CLEANUP TEST DOCUMENT: ${documentId}`);
+                    
+                    if (response.ok || response.status === 404) {
+                        // 404 means already deleted, which is fine
+                        cleanupSuccessCount++;
+                        addLog(`🗑️ Test document ${documentId} deleted successfully`, 'response');
+                    } else {
+                        cleanupFailCount++;
+                        addLog(`⚠️ Failed to delete test document ${documentId} (status: ${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    cleanupFailCount++;
+                    addLog(`⚠️ Error deleting test document ${documentId}: ${error.message}`, 'error');
+                }
+            }
+            
+            if (cleanupSuccessCount > 0) {
+                addLog(`✅ Cleanup completed: ${cleanupSuccessCount} document(s) deleted from Paradigm`, 'response');
+            }
+            
+            if (cleanupFailCount > 0) {
+                addLog(`⚠️ Cleanup issues: ${cleanupFailCount} document(s) could not be deleted`, 'error');
+            }
+        }
+
         // =============================================================
         // LOGGING AND MONITORING FUNCTIONS
         // =============================================================
@@ -1122,6 +1174,11 @@ if __name__ == "__main__":
                         
                         showResult(resultDiv, resultMessage, 'success');
                         
+                        // Automatically delete uploaded documents from Paradigm after testing
+                        if (hasAttachments) {
+                            await cleanupUploadedDocuments(attachmentIds);
+                        }
+                        
                         // Clear attachments after successful execution
                         queryAttachedFiles = [];
                         document.getElementById('queryFilesList').innerHTML = '';
@@ -1133,12 +1190,36 @@ if __name__ == "__main__":
                             `⚠️ Workflow execution status: ${data.status}\n\nExecution ID: ${data.execution_id}\nExecution Time: ${executionTime}\nError: ${data.error || 'Unknown error'}`, 
                             'error'
                         );
+                        
+                        // Clean up documents even if workflow failed
+                        if (hasAttachments) {
+                            await cleanupUploadedDocuments(attachmentIds);
+                            queryAttachedFiles = [];
+                            document.getElementById('queryFilesList').innerHTML = '';
+                            document.getElementById('queryUploadStatus').innerHTML = '';
+                        }
                     }
                 } else {
                     showResult(resultDiv, `❌ Error: ${data.detail || 'Failed to execute workflow'}`, 'error');
+                    
+                    // Clean up documents even if API call failed
+                    if (hasAttachments) {
+                        await cleanupUploadedDocuments(attachmentIds);
+                        queryAttachedFiles = [];
+                        document.getElementById('queryFilesList').innerHTML = '';
+                        document.getElementById('queryUploadStatus').innerHTML = '';
+                    }
                 }
             } catch (error) {
                 showResult(resultDiv, `❌ Network Error: ${error.message}`, 'error');
+                
+                // Clean up documents even if network error occurred
+                if (hasAttachments) {
+                    await cleanupUploadedDocuments(attachmentIds);
+                    queryAttachedFiles = [];
+                    document.getElementById('queryFilesList').innerHTML = '';
+                    document.getElementById('queryUploadStatus').innerHTML = '';
+                }
             }
         }
 
