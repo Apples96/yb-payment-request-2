@@ -345,10 +345,7 @@ Architecture:
     <!-- Step 3: Update Workflow -->
     <div class="container">
         <h2>3. Update your workflow until it works</h2>
-        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results.</p>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-            <strong>💡 Tip:</strong> After testing, go back to step 1, update your workflow description, and click "Create Workflow" again to generate an improved version.
-        </div>
+        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results. After testing, go back to step 1, update your workflow description, and click "Create Workflow" again to generate an improved version.</p>
         
         <!-- Monitoring Helper Section -->
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
@@ -382,23 +379,7 @@ Architecture:
                 <li><strong>Create a new directory for your API:</strong> Create a new folder on your computer for this deployment</li>
                 <li><strong>Install Vercel CLI:</strong> If you haven't already, install Vercel CLI by running: <code>npm install -g vercel</code></li>
                 <li><strong>Login to Vercel:</strong> Run <code>vercel login</code> and follow the prompts to connect your GitHub account</li>
-                <li>Create a <code>vercel.json</code> file with the following content:</li>
-            </ol>
-            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>{
-  "functions": {
-    "api/workflow.py": {
-      "runtime": "python3.9"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/workflow",
-      "dest": "/api/workflow.py"
-    }
-  ]
-}</code></pre>
-            <ol style="margin-left: 20px;">
-                <li>Create <code>api/workflow.py</code> with your generated code plus these imports:</li>
+                <li><strong>Create your API file:</strong> Create <code>api/workflow.py</code> with your generated code plus these imports:</li>
             </ol>
             <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>from http.server import BaseHTTPRequestHandler
 import json
@@ -441,12 +422,16 @@ class handler(BaseHTTPRequestHandler):
             <ol style="margin-left: 20px;">
                 <li><strong>Add your Paradigm API key:</strong> Replace <code>"your-paradigm-api-key-here"</code> in the code above with your actual Paradigm API key</li>
                 <li><strong>Deploy to Vercel:</strong> In your project directory, run <code>vercel --prod</code></li>
-                <li><strong>Set environment variables:</strong> If prompted, add your Paradigm API key as an environment variable in the Vercel dashboard</li>
+                <li><strong>Set environment variables:</strong> In the Vercel dashboard, go to your project settings → Environment Variables and add your Paradigm API key</li>
                 <li><strong>Get your API URL:</strong> After deployment, Vercel will show you your API URL. It will be something like: <code>https://your-project.vercel.app/api/workflow</code></li>
             </ol>
             
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #2196f3;">
+                <strong>💡 Note:</strong> Vercel automatically detects Python files in the <code>api/</code> directory and deploys them as serverless functions. No <code>vercel.json</code> configuration is needed for basic deployments.
+            </div>
+            
             <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
-                <strong>🔑 Important:</strong> Make sure to add your Paradigm API key to the code before deploying. You can get this key from your Paradigm admin interface under API settings.
+                <strong> Important:</strong> Make sure to add your Paradigm API key as an environment variable in the Vercel dashboard for security. Never commit API keys to your code.
             </div>
             
             <h3>Option B: Deploy on your own infrastructure</h3>
