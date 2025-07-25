@@ -372,7 +372,9 @@ Architecture:
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
             <h3>Option A: Deploy on Vercel (Recommended for quick setup)</h3>
             <ol style="margin-left: 20px;">
-                <li>Create a new directory for your API</li>
+                <li><strong>Create a new directory for your API:</strong> Create a new folder on your computer for this deployment</li>
+                <li><strong>Install Vercel CLI:</strong> If you haven't already, install Vercel CLI by running: <code>npm install -g vercel</code></li>
+                <li><strong>Login to Vercel:</strong> Run <code>vercel login</code> and follow the prompts to connect your GitHub account</li>
                 <li>Create a <code>vercel.json</code> file with the following content:</li>
             </ol>
             <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>{
@@ -395,6 +397,10 @@ Architecture:
 import json
 import os
 from typing import Dict, Any
+
+# IMPORTANT: Add your Paradigm API key here
+# You can get this from your Paradigm admin interface
+PARADIGM_API_KEY = "your-paradigm-api-key-here"
 
 # Add your generated workflow code here
 # ... (paste your generated code)
@@ -426,9 +432,15 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
 </code></pre>
             <ol style="margin-left: 20px;">
-                <li>Deploy to Vercel: <code>vercel --prod</code></li>
-                <li>Your API will be available at: <code>https://your-project.vercel.app/api/workflow</code></li>
+                <li><strong>Add your Paradigm API key:</strong> Replace <code>"your-paradigm-api-key-here"</code> in the code above with your actual Paradigm API key</li>
+                <li><strong>Deploy to Vercel:</strong> In your project directory, run <code>vercel --prod</code></li>
+                <li><strong>Set environment variables:</strong> If prompted, add your Paradigm API key as an environment variable in the Vercel dashboard</li>
+                <li><strong>Get your API URL:</strong> After deployment, Vercel will show you your API URL. It will be something like: <code>https://your-project.vercel.app/api/workflow</code></li>
             </ol>
+            
+            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                <strong>🔑 Important:</strong> Make sure to add your Paradigm API key to the code before deploying. You can get this key from your Paradigm admin interface under API settings.
+            </div>
             
             <h3>Option B: Deploy on your own infrastructure</h3>
             <ol style="margin-left: 20px;">
@@ -447,6 +459,11 @@ python-dotenv==1.0.0</code></pre>
 from pydantic import BaseModel
 import uvicorn
 from typing import Optional
+import os
+
+# IMPORTANT: Add your Paradigm API key here
+# You can get this from your Paradigm admin interface
+PARADIGM_API_KEY = "your-paradigm-api-key-here"
 
 # Add your generated workflow code here
 # ... (paste your generated code)
@@ -468,9 +485,15 @@ async def execute_workflow_endpoint(request: WorkflowRequest):
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)</code></pre>
             <ol style="margin-left: 20px;">
-                <li>Run your API: <code>python workflow_api.py</code></li>
-                <li>Your API will be available at: <code>http://your-server:8000/workflow</code></li>
+                <li><strong>Add your Paradigm API key:</strong> Replace <code>"your-paradigm-api-key-here"</code> in the code above with your actual Paradigm API key</li>
+                <li><strong>Install dependencies:</strong> Run <code>pip install -r requirements.txt</code></li>
+                <li><strong>Run your API:</strong> Execute <code>python workflow_api.py</code></li>
+                <li><strong>Access your API:</strong> Your API will be available at <code>http://your-server:8000/workflow</code></li>
             </ol>
+            
+            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                <strong>🔑 Important:</strong> Make sure to add your Paradigm API key to the code before running. You can get this key from your Paradigm admin interface under API settings.
+            </div>
         </div>
     </div>
 
