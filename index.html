@@ -364,6 +364,116 @@ Architecture:
         </div>
     </div>
 
+    <!-- Step 4: Deploy Workflow API -->
+    <div class="container">
+        <h2>4. Deploy your workflow API endpoint</h2>
+        <p>Deploy your workflow as a standalone API endpoint that can be called from external applications.</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+            <h3>Option A: Deploy on Vercel (Recommended for quick setup)</h3>
+            <ol style="margin-left: 20px;">
+                <li>Create a new directory for your API</li>
+                <li>Create a <code>vercel.json</code> file with the following content:</li>
+            </ol>
+            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>{
+  "functions": {
+    "api/workflow.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/workflow",
+      "dest": "/api/workflow.py"
+    }
+  ]
+}</code></pre>
+            <ol style="margin-left: 20px;">
+                <li>Create <code>api/workflow.py</code> with your generated code plus these imports:</li>
+            </ol>
+            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>from http.server import BaseHTTPRequestHandler
+import json
+import os
+from typing import Dict, Any
+
+# Add your generated workflow code here
+# ... (paste your generated code)
+
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        data = json.loads(post_data.decode('utf-8'))
+        
+        # Execute your workflow here
+        result = execute_workflow(data.get('query', ''))
+        
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+        
+        response = json.dumps({'result': result})
+        self.wfile.write(response.encode())
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+</code></pre>
+            <ol style="margin-left: 20px;">
+                <li>Deploy to Vercel: <code>vercel --prod</code></li>
+                <li>Your API will be available at: <code>https://your-project.vercel.app/api/workflow</code></li>
+            </ol>
+            
+            <h3>Option B: Deploy on your own infrastructure</h3>
+            <ol style="margin-left: 20px;">
+                <li>Create a new Python file (e.g., <code>workflow_api.py</code>)</li>
+                <li>Add these dependencies to your <code>requirements.txt</code>:</li>
+            </ol>
+            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+aiohttp==3.9.1
+python-dotenv==1.0.0</code></pre>
+            <ol style="margin-left: 20px;">
+                <li>Create your API file with this structure:</li>
+            </ol>
+            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import uvicorn
+from typing import Optional
+
+# Add your generated workflow code here
+# ... (paste your generated code)
+
+app = FastAPI()
+
+class WorkflowRequest(BaseModel):
+    query: str
+    user_id: Optional[str] = None
+
+@app.post("/workflow")
+async def execute_workflow_endpoint(request: WorkflowRequest):
+    try:
+        result = execute_workflow(request.query)
+        return {"result": result, "status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)</code></pre>
+            <ol style="margin-left: 20px;">
+                <li>Run your API: <code>python workflow_api.py</code></li>
+                <li>Your API will be available at: <code>http://your-server:8000/workflow</code></li>
+            </ol>
+        </div>
+    </div>
+
     <!-- Step 5: Add to Paradigm -->
     <div class="container">
         <h2>5. Add your workflow to Paradigm</h2>
