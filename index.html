@@ -308,7 +308,7 @@ Architecture:
             <strong>Available tools:</strong> document upload, chat, document search, document analysis<br>
             <strong>📚 API Reference:</strong> Detailed information about endpoints, parameters, and responses can be found in the <a href="https://paradigm.lighton.ai/api/schema/swagger-ui/#/" target="_blank" style="color: #007bff;">Paradigm API Swagger documentation</a>
         </div>
-        <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information...">Search for documents about the user's question, then analyze those documents to provide a detailed summary.</textarea>
+        <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information..." style="color: #999;"></textarea>
         <input type="text" id="workflowName" placeholder="Workflow name (optional)" />
         <button onclick="createWorkflow()">Create Workflow</button>
         
@@ -1238,8 +1238,37 @@ if __name__ == "__main__":
                 "Search for documents, extract key information using chat completion, then analyze specific documents for deeper insights."
             ];
             
-            // You can uncomment this to show examples
-            // document.getElementById('workflowDescription').placeholder = examples[0];
+            // Set up example text behavior for workflow description
+            const workflowTextarea = document.getElementById('workflowDescription');
+            const exampleText = "Search for documents about the user's question, then analyze those documents to provide a detailed summary.";
+            
+            // Set initial example text
+            workflowTextarea.value = exampleText;
+            workflowTextarea.style.color = '#999';
+            
+            // Handle focus - clear example text when user starts typing
+            workflowTextarea.addEventListener('focus', function() {
+                if (this.value === exampleText) {
+                    this.value = '';
+                    this.style.color = '#333';
+                }
+            });
+            
+            // Handle blur - restore example text if field is empty
+            workflowTextarea.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = exampleText;
+                    this.style.color = '#999';
+                }
+            });
+            
+            // Handle input - change color when user types
+            workflowTextarea.addEventListener('input', function() {
+                if (this.value !== exampleText) {
+                    this.style.color = '#333';
+                }
+            });
+            
             document.getElementById('testButton').textContent = 'Test Workflow';
         };
     </script>
