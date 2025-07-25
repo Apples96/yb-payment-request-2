@@ -165,13 +165,3 @@ class WorkflowWithFilesRequest(BaseModel):
     context: Optional[Dict[str, Any]] = Field(None, description="Additional context for code generation")
     uploaded_file_ids: Optional[List[int]] = Field(None, description="List of uploaded file IDs to use in workflow")
 
-class WorkflowFeedbackRequest(BaseModel):
-    """
-    Request model for workflow improvement via feedback.
-    
-    Allows users to provide feedback on execution results to improve
-    the generated code. Uses both execution results and user feedback
-    to regenerate better workflow code.
-    """
-    execution_result: str = Field(..., description="The result of running the workflow code")
-    user_feedback: str = Field(..., description="User's feedback about what went wrong or what should be improved")

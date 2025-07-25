@@ -50,7 +50,6 @@ from .models import (
     FileQuestionRequest,
     FileQuestionResponse,
     WorkflowWithFilesRequest,
-    WorkflowFeedbackRequest
 )
 from .workflow.generator import workflow_generator
 from .workflow.executor import workflow_executor
@@ -596,57 +595,6 @@ async def create_workflow_with_files(request: WorkflowWithFilesRequest):
             detail=f"Failed to create workflow with files: {str(e)}"
         )
 
-@api_router.post("/workflows/{workflow_id}/regenerate-with-feedback", response_model=WorkflowResponse, tags=["Workflows"])
-async def regenerate_workflow_with_feedback(workflow_id: str, request: WorkflowFeedbackRequest = Body(...)):
-    """
-    Improve workflow code based on execution results and user feedback.
-    
-    Takes the original workflow description, execution results, and user feedback
-    to generate improved code that addresses identified issues. Uses AI to
-    understand what went wrong and how to fix it.
-    
-    Args:
-        workflow_id: ID of the workflow to improve
-        request: Feedback request with execution results and improvement suggestions
-        
-    Returns:
-        WorkflowResponse: Updated workflow with improved generated code
-        
-    Raises:
-        HTTPException: 404 if workflow not found, 503 if API keys are missing, 500 if regeneration fails
-        
-    Example Use Case:
-        - User executes workflow and gets unexpected results
-        - User provides feedback: "The search query was too broad, be more specific"
-        - System regenerates code with more targeted search logic
-    """
-    # Validate required API keys
-    validate_anthropic_api_key()
-    
-    workflow = workflow_executor.get_workflow(workflow_id)
-    if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
-    try:
-        improved_code = await workflow_generator.regenerate_with_feedback(
-            workflow=workflow,
-            execution_result=request.execution_result,
-            user_feedback=request.user_feedback
-        )
-        workflow.generated_code = improved_code
-        workflow.update_status("ready")
-        return WorkflowResponse(
-            id=workflow.id,
-            name=workflow.name,
-            description=workflow.description,
-            status=workflow.status,
-            generated_code=workflow.generated_code,
-            created_at=workflow.created_at,
-            updated_at=workflow.updated_at,
-            error=workflow.error
-        )
-    except Exception as e:
-        workflow.update_status("failed", str(e))
-        raise HTTPException(status_code=500, detail=f"Failed to regenerate workflow: {str(e)}")
 
 # Include the API router in the main app
 app.include_router(api_router)

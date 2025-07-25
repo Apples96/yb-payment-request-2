@@ -29,7 +29,6 @@ Key Features:
 - Real-time logging with color-coded output
 - Responsive design with modern CSS styling
 - File drag-and-drop with visual feedback
-- Workflow feedback and regeneration capabilities
 
 Architecture:
 - Pure vanilla JavaScript (no frameworks)
@@ -242,19 +241,64 @@ Architecture:
         .remove-file:hover {
             background: #c82333;
         }
-        .result.success[data-regenerated="true"] {
-            border-left: 4px solid #ff9500;
-            background: linear-gradient(90deg, #e6f3ff 0%, #f0f8ff 100%);
+        /* Add these styles to your existing CSS section */
+        h1 {
+            font-size: 32px; /* Increased to match the logo text size better */
+            font-weight: 700; /* Increased to bold to match the logo */
+            color: #000;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* More comprehensive font stack */
+            letter-spacing: -0.5px; /* Tighter letter spacing to match logo */
+            line-height: 1; /* Tighter line height */
         }
-        .result.success[data-regenerated="true"]::before {
-            content: "🔄 REGENERATED • ";
-            font-weight: bold;
-            color: #ff9500;
+
+        h1 img {
+            height: 52px;
+            width: auto;
+            margin-right: 10px;
+            margin-top: 3px;
+            vertical-align: middle;
+        }
+
+        h1 span {
+            margin-top: 2px;
+            font-weight: 700; /* Ensure the span also has the same weight */
+            font-size: 32px; /* Ensure the span also has the same size */
+        }
+        .container h3 {
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .container .helper-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .container .helper-section h3 {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .container .helper-section p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
-    <h1>🚀 Workflow Automation Test</h1>
+    <h1>
+        <img src="./lighton-logo.png" alt="LightOn Logo">
+        <span>workflow builder</span>
+    </h1>
     
     <!-- Step 1: Create Workflow -->
     <div class="container">
@@ -266,9 +310,9 @@ Architecture:
         <div id="workflowResult"></div>
     </div>
 
-    <!-- Step 2: Execute Workflow with Query & Documents -->
+    <!-- Step 2: Test Workflow -->
     <div class="container">
-        <h2>2. Execute Workflow</h2>
+        <h2>2. Test Workflow</h2>
         <p>Enter your query and optionally attach documents:</p>
         
         <!-- Query Input -->
@@ -287,28 +331,97 @@ Architecture:
             <ul class="file-list" id="queryFilesList"></ul>
         </div>
         
-        <button onclick="executeWorkflowWithQuery()" id="testButton" disabled>Execute Workflow</button>
+        <button onclick="executeWorkflowWithQuery()" id="testButton" disabled>Test Workflow</button>
         <div id="testResult"></div>
     </div>
 
-    <!-- Step 3: Comprehensive Workflow Logs -->
+    <!-- Step 3: Update Workflow -->
     <div class="container">
-        <h2>3. Comprehensive Workflow Execution Logs</h2>
-        <p>Monitor every step of workflow execution with detailed information:</p>
-        <ul style="font-size: 12px; color: #666; margin: 10px 0;">
-            <li>🔍 API endpoints called and payloads sent</li>
-            <li>📊 Document IDs, file IDs, and search queries</li>
-            <li>💬 Response content and analysis results</li>
-            <li>📄 Document chunks and file processing details</li>
-            <li>⚡ Step-by-step workflow execution flow</li>
-            <li>❌ Error handling and fallback mechanisms</li>
-        </ul>
-        <button onclick="clearLogs()" class="clear-logs">Clear Logs</button>
-        <div class="logs-container" id="logsContainer">
-            <div class="log-entry">
-                <span class="log-timestamp">[Ready]</span> <span class="log-response">Waiting for API activity...</span>
+        <h2>3. Update your workflow until it works</h2>
+        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results.</p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+            <strong>💡 Tip:</strong> After testing, go back to step 1, update your workflow description, and click "Create Workflow" again to generate an improved version.
+        </div>
+        
+        <!-- Monitoring Helper Section -->
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+            <h3 style="color: #666; font-size: 16px; margin-bottom: 15px;">📊 Monitor Workflow Execution</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Monitor every step of workflow execution with detailed information:</p>
+            <ul style="font-size: 12px; color: #666; margin: 10px 0;">
+                <li>🔍 API endpoints called and payloads sent</li>
+                <li>📊 Document IDs, file IDs, and search queries</li>
+                <li>💬 Response content and analysis results</li>
+                <li>📄 Document chunks and file processing details</li>
+                <li>⚡ Step-by-step workflow execution flow</li>
+                <li>❌ Error handling and fallback mechanisms</li>
+            </ul>
+            <button onclick="clearLogs()" class="clear-logs">Clear Logs</button>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-entry">
+                    <span class="log-timestamp">[Ready]</span> <span class="log-response">Waiting for API activity...</span>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Step 5: Add to Paradigm -->
+    <div class="container">
+        <h2>5. Add your workflow to Paradigm</h2>
+        <p>Paradigm has a feature called "Third Party Tools" that allows you to create custom tools within the Paradigm UI. When you use the tool, it will execute your deployed workflow.</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+            <h3>Step-by-step instructions:</h3>
+            <ol style="margin-left: 20px;">
+                <li><strong>Access Third Party Tools:</strong> In your Paradigm admin interface, navigate to the Third Party Tools section</li>
+                <li><strong>Create New Tool:</strong> Click "Add Third Party Tool"</li>
+                <li><strong>Fill in Basic Information:</strong>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>Name:</strong> Give your workflow a descriptive name (e.g., "Document Analysis Workflow")</li>
+                        <li><strong>Enabled:</strong> Check this box to activate the tool</li>
+                        <li><strong>Description:</strong> Provide a detailed description of what your workflow does. Be specific about:
+                            <ul style="margin-left: 20px;">
+                                <li>What tasks it can perform</li>
+                                <li>What types of queries it handles</li>
+                                <li>Any limitations or requirements</li>
+                                <li>Example use cases</li>
+                            </ul>
+                            <strong>Example:</strong> "This workflow analyzes documents and provides detailed summaries. It can search through uploaded documents, extract key information, and generate comprehensive analysis reports. Works best with text-based documents and specific questions about document content."
+                        </li>
+                    </ul>
+                </li>
+                <li><strong>HTTP Configuration:</strong>
+                    <ul style="margin-left: 20px;">
+                        <li><strong>HTTP Method:</strong> Select "POST" (since your workflow expects POST requests)</li>
+                        <li><strong>Headers:</strong> Add any required headers (usually none needed for basic setup)</li>
+                        <li><strong>Require Document:</strong> Set to "Yes" if your workflow needs documents, "No" if it works with just queries</li>
+                    </ul>
+                </li>
+                <li><strong>Creation Method:</strong> Select "Parameters/URL"</li>
+                <li><strong>URL:</strong> Enter your deployed API endpoint URL:
+                    <ul style="margin-left: 20px;">
+                        <li>For Vercel: <code>https://your-project.vercel.app/api/workflow</code></li>
+                        <li>For custom infrastructure: <code>http://your-server:8000/workflow</code></li>
+                    </ul>
+                </li>
+                <li><strong>Parameters:</strong> Configure the parameters your API expects:
+                    <ul style="margin-left: 20px;">
+                        <li><strong>Body Parameters:</strong> Add a parameter named "query" of type "string"</li>
+                        <li>If your API expects additional parameters, add them as needed</li>
+                    </ul>
+                </li>
+                <li><strong>Save and Deploy:</strong> Save your tool configuration, then navigate to Chat settings in the Paradigm admin and activate your third party tool using the arrow.</li>
+            </ol>
+            
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 15px;">
+                <strong>�� Important:</strong> The description you provide is crucial for tool routing. Paradigm uses this description to understand when to use your tool, so make it as detailed and accurate as possible.
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 6: Test and Share -->
+    <div class="container">
+        <h2>6. 🚀 Test and share</h2>
+        <p>You are now set up to use your workflow as a third party tool within Paradigm. The other users in your company can also access this tool, so spread the news and show them how it works!</p>
     </div>
 
     <script>
@@ -346,8 +459,8 @@ Architecture:
          */
         
         // Global configuration and state variables
-        // const API_BASE = 'http://localhost:8000'  // Local backend API base URL
-        const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
+        const API_BASE = 'http://localhost:8000'  // Local backend API base URL
+        // const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
@@ -904,59 +1017,8 @@ Architecture:
          */
         function showResult(element, message, type) {
             element.innerHTML = `<div class="result ${type}">${message}</div>`;
-            // Add feedback form after showing result if it's a workflow execution result
-            if (element.id === 'testResult' && type === 'success') {
-                element.innerHTML += `
-                <div style="margin-top:16px;">
-                  <label for="feedbackText">📝 Not happy with the result? Help improve it:</label>
-                  <textarea id="feedbackText" placeholder="Describe what went wrong or what should be improved" style="margin-top:8px;"></textarea>
-                  <button onclick="submitFeedback()" style="margin-top:8px;">Regenerate with Feedback</button>
-                  <div id="feedbackStatus"></div>
-                </div>
-                `;
-            }
         }
 
-        /**
-         * Submit user feedback to improve workflow code.
-         * Uses execution results and feedback to regenerate better code.
-         */
-        async function submitFeedback() {
-            const feedback = document.getElementById('feedbackText').value.trim();
-            const resultDiv = document.getElementById('testResult');
-            const feedbackStatus = document.getElementById('feedbackStatus');
-            if (!feedback) {
-                feedbackStatus.innerHTML = '<div class="result error">Please enter feedback.</div>';
-                return;
-            }
-            // Get the last execution result from the resultDiv
-            let executionResult = resultDiv.innerText || '';
-            // Remove feedback form text from executionResult
-            executionResult = executionResult.split('📝 Not happy with the result?')[0].trim();
-            feedbackStatus.innerHTML = '<div class="result loading">Submitting feedback and regenerating code...</div>';
-            try {
-                const { response, data } = await loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/regenerate-with-feedback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        execution_result: executionResult,
-                        user_feedback: feedback
-                    })
-                }, 'REGENERATE WITH FEEDBACK');
-                if (response.ok) {
-                    feedbackStatus.innerHTML = '<div class="result success">✅ Improved code generated! See above.</div>';
-                    
-                    // Show the improved code in the workflow creation section
-                    const workflowResultDiv = document.getElementById('workflowResult');
-                    const resultMessage = `🔄 Workflow Regenerated with Feedback\n\nID: ${data.id}\nName: ${data.name || 'Unnamed'}\nStatus: ${data.status}\n\nGenerated Code:\n${data.generated_code || 'No code generated'}`;
-                    workflowResultDiv.innerHTML = `<div class="result success" data-regenerated="true">${resultMessage}</div>`;
-                } else {
-                    feedbackStatus.innerHTML = `<div class="result error">❌ Error: ${data.detail || 'Failed to regenerate code'}</div>`;
-                }
-            } catch (error) {
-                feedbackStatus.innerHTML = `<div class="result error">❌ Network Error: ${error.message}</div>`;
-            }
-        }
 
         // =============================================================
         // PAGE INITIALIZATION
@@ -974,6 +1036,7 @@ Architecture:
             
             // You can uncomment this to show examples
             // document.getElementById('workflowDescription').placeholder = examples[0];
+            document.getElementById('testButton').textContent = 'Test Workflow';
         };
     </script>
 </body>

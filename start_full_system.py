@@ -65,11 +65,11 @@ def start_full_system():
         # Wait a moment for backend to start
         time.sleep(3)
         
-        # Start frontend server
+        # Start frontend server from root directory (where index.html is now located)
         print("🌐 Starting frontend server on http://localhost:3000...")
         frontend_process = subprocess.Popen([
             sys.executable, "-m", "http.server", "3000"
-        ], cwd=Path(__file__).parent / "frontend")
+        ], cwd=Path(__file__).parent)  # Changed from /frontend to root directory
         
         print("\n✅ Both servers are running!")
         print("🔗 Open http://localhost:3000 in your browser")
