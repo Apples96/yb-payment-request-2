@@ -33,7 +33,7 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -150,6 +150,18 @@ async def serve_frontend():
             "timestamp": datetime.utcnow().isoformat(),
             "note": "Frontend file not found - API only mode"
         }
+
+@app.get("/lighton-logo.png", tags=["Static"])
+async def serve_logo():
+    """
+    Serve the LightOn logo image.
+    """
+    try:
+        with open("lighton-logo.png", "rb") as f:
+            image_data = f.read()
+        return Response(content=image_data, media_type="image/png")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Logo not found")
 
 @app.get("/health", tags=["Health"]) 
 async def health_check():
