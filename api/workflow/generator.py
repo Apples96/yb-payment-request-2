@@ -139,7 +139,7 @@ class ParadigmClient:
         
         raise Exception("Analysis timed out")
     
-    async def chat_completion(self, prompt: str, model: str = "Alfred 4.2") -> str:
+    async def chat_completion(self, prompt: str, model: str = "alfred-4.2") -> str:
         endpoint = f"{self.base_url}/api/v2/chat/completions"
         payload = {
             "model": model,
