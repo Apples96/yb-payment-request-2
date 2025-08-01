@@ -522,7 +522,7 @@ if __name__ == "__main__":
                     <ul style="margin-left: 20px;">
                         <li><strong>HTTP Method:</strong> Select "POST" (since your workflow expects POST requests)</li>
                         <li><strong>Headers:</strong> Add any required headers (usually none needed for basic setup)</li>
-                        <li><strong>Require Document:</strong> Set to "Yes" if your workflow needs documents, "No" if it works with just queries</li>
+                        <li><strong>Require Document:</strong> Set to "No" (tools currently can't retrieve uploaded docs from the Paradigm UI)</li>
                     </ul>
                 </li>
                 <li><strong>Creation Method:</strong> Select "Parameters/URL"</li>
@@ -534,7 +534,8 @@ if __name__ == "__main__":
                 </li>
                 <li><strong>Parameters:</strong> Configure the parameters your API expects:
                     <ul style="margin-left: 20px;">
-                        <li><strong>Body Parameters:</strong> Add a parameter named "query" of type "string"</li>
+                        <li><strong>Body Parameters:</strong> Add a parameter named "user_input" of type "string" (or "query" in some cases, but generally "user_input" is what the endpoint expects)</li>
+                    <li><strong>API Documentation:</strong> If deploying via FastAPI, you can view the full API documentation at "your API base URL/docs" (e.g., https://your-api.vercel.app/docs)</li>
                         <li>If your API expects additional parameters, add them as needed</li>
                     </ul>
                 </li>
@@ -1162,6 +1163,12 @@ if __name__ == "__main__":
                         resultMessage += `\n\n=== RESULT ===\n${data.result}`;
                         
                         showResult(resultDiv, resultMessage, 'success');
+                        
+                        // Add tip about Paradigm tool
+                        const tipDiv = document.createElement('div');
+                        tipDiv.style.cssText = 'background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #2196f3; font-size: 12px;';
+                        tipDiv.innerHTML = '<strong>💡 Tip:</strong> The demo workflow is available in Paradigm under the tool "Workflow demo". To run your newly generated workflow, go to Admin → Third Party Tools → Workflow demo tool and change the workflow ID in the URL address to the format shown above (e.g., "afe2e40e-3514-4445-b1c9-80ce24571837").';
+                        resultDiv.appendChild(tipDiv);
                         
                         // Automatically delete uploaded documents from Paradigm after testing
                         if (hasAttachments) {
