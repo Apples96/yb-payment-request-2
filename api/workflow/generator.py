@@ -63,6 +63,9 @@ CRITICAL INSTRUCTIONS:
 2. The code must define: async def execute_workflow(user_input: str) -> str
 3. Include ALL necessary imports and API client code directly in the workflow
 4. Make the workflow completely self-contained and portable
+5. *** NEVER USE 'pass' OR PLACEHOLDER COMMENTS - IMPLEMENT ALL FUNCTIONS COMPLETELY ***
+6. *** EVERY FUNCTION MUST BE FULLY IMPLEMENTED WITH WORKING CODE ***
+7. *** NO STUB FUNCTIONS - ALL CODE MUST BE EXECUTABLE AND FUNCTIONAL ***
 
 REQUIRED STRUCTURE:
 ```python
@@ -250,7 +253,13 @@ document_ids = [doc["id"] for doc in search_results.get("documents", [])]  # Sho
 import nltk  # External library not available
 answer = search_result["documents"][0].get("content", "")  # Raw content extraction
 
-Generate the complete self-contained workflow code that implements the exact logic described."""
+Generate the complete self-contained workflow code that implements the exact logic described.
+
+*** CRITICAL: NO PLACEHOLDER CODE ***
+- NEVER use 'pass' statements
+- NEVER use "# Implementation" comments  
+- EVERY function must be fully implemented with working code
+- ALL code must be ready to execute immediately
         
         enhanced_description = f"""
 Workflow Description: {description}
