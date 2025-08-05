@@ -156,6 +156,25 @@ class ParadigmClient:
                     return result["choices"][0]["message"]["content"]
                 else:
                     raise Exception(f"Paradigm chat completion API error {response.status}: {await response.text()}")
+    
+    async def analyze_image(self, query: str, document_ids: List[str], model: str = None, private: bool = False) -> str:
+        endpoint = f"{self.base_url}/api/v2/chat/image-analysis"
+        payload = {
+            "query": query,
+            "document_ids": document_ids
+        }
+        if model:
+            payload["model"] = model
+        if private is not None:
+            payload["private"] = private
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.post(endpoint, json=payload, headers=self.headers) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result.get("answer", "No analysis result provided")
+                else:
+                    raise Exception(f"Image analysis API error {response.status}: {await response.text()}")
 
 # Initialize clients
 paradigm_client = ParadigmClient(LIGHTON_API_KEY, LIGHTON_BASE_URL)
@@ -176,6 +195,7 @@ AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False)
 3. await paradigm_client.chat_completion(prompt: str, model: str = "Alfred 4.2")
+4. await paradigm_client.analyze_image(query: str, document_ids: List[str], model=None, private=False) - Analyze images in documents with AI-powered visual analysis
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
