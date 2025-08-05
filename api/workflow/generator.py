@@ -255,7 +255,7 @@ answer = search_result["documents"][0].get("content", "")  # Raw content extract
 
 Generate the complete self-contained workflow code that implements the exact logic described.
 
-CRITICAL: NO PLACEHOLDER CODE - NEVER use 'pass' statements, NEVER use placeholder comments, EVERY function must be fully implemented with working code, ALL code must be ready to execute immediately.
+CRITICAL: NO PLACEHOLDER CODE - NEVER use 'pass' statements, NEVER use placeholder comments, EVERY function must be fully implemented with working code, ALL code must be ready to execute immediately."""
         
         enhanced_description = f"""
 Workflow Description: {description}
