@@ -193,9 +193,11 @@ IMPORTANT LIBRARY RESTRICTIONS:
 
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
-2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False) - MAXIMUM 5 documents per call
+2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False) 
+   *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
 3. await paradigm_client.chat_completion(prompt: str, model: str = "Alfred 4.2")
-4. await paradigm_client.analyze_image(query: str, document_ids: List[str], model=None, private=False) - Analyze images in documents with AI-powered visual analysis, MAXIMUM 5 documents per call
+4. await paradigm_client.analyze_image(query: str, document_ids: List[str], model=None, private=False) - Analyze images in documents with AI-powered visual analysis
+   *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
@@ -213,17 +215,22 @@ CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
 # OR for attached files: document_ids = [str(file_id) for file_id in attached_file_ids]
 
-HANDLING MULTIPLE DOCUMENTS (>5 limit):
-# For document analysis with more than 5 documents, split into batches
-def split_into_batches(document_ids, batch_size=5):
-    return [document_ids[i:i + batch_size] for i in range(0, len(document_ids), batch_size)]
+CRITICAL: DOCUMENT ANALYSIS 5-DOCUMENT LIMIT:
+# Document analysis can only handle 5 documents at a time
+# If you have more than 5 documents, you MUST split them into batches
 
-# Example usage for large document sets:
-all_results = []
-for batch in split_into_batches(document_ids, 5):
-    batch_result = await paradigm_client.analyze_documents_with_polling(query, batch)
-    all_results.append(batch_result)
-combined_analysis = "\\n\\n".join(all_results)
+# ALWAYS check document count before analysis:
+if len(document_ids) > 5:
+    # Process in batches of 5
+    results = []
+    for i in range(0, len(document_ids), 5):
+        batch = document_ids[i:i+5]
+        result = await paradigm_client.analyze_documents_with_polling(query, batch)
+        results.append(result)
+    final_analysis = "\\n\\n".join(results)
+else:
+    # Process all documents at once (5 or fewer)
+    final_analysis = await paradigm_client.analyze_documents_with_polling(query, document_ids)
 
 CORRECT TEXT PROCESSING (using built-in libraries):
 import re
