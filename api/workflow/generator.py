@@ -271,7 +271,7 @@ Generate a complete, self-contained workflow that:
         try:
             response = self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,  # Increased for full code generation
+                max_tokens=64000,  # Increased for full code generation
                 system=system_prompt,
                 messages=[{"role": "user", "content": enhanced_description}]
             )

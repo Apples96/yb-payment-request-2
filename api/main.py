@@ -105,7 +105,7 @@ app = FastAPI(
 
 # Create API router with /api prefix
 from fastapi import APIRouter
-api_router = APIRouter(prefix="/api")
+api_router = APIRouter()
 
 # Add CORS middleware for cross-domain frontend support
 app.add_middleware(
@@ -609,7 +609,7 @@ async def create_workflow_with_files(request: WorkflowWithFilesRequest):
 
 
 # Include the API router in the main app
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
