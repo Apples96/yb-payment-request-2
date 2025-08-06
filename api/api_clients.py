@@ -93,8 +93,8 @@ Additional context: {context or 'None'}
 Return only the Python code, no explanations or markdown formatting."""
 
     payload = {
-        "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 2000,
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 15000,
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_prompt}]
     }
@@ -139,7 +139,7 @@ async def anthropic_chat_completion(prompt: str, system_prompt: Optional[str] = 
         Exception: If API call fails or response processing fails
     """
     payload = {
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-sonnet-4-20250514",
         "max_tokens": 1000,
         "system": system_prompt or "You are a helpful assistant.",
         "messages": [{"role": "user", "content": prompt}]
