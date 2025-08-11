@@ -165,3 +165,23 @@ class WorkflowWithFilesRequest(BaseModel):
     context: Optional[Dict[str, Any]] = Field(None, description="Additional context for code generation")
     uploaded_file_ids: Optional[List[int]] = Field(None, description="List of uploaded file IDs to use in workflow")
 
+class WorkflowDescriptionEnhanceRequest(BaseModel):
+    """
+    Request model for enhancing workflow descriptions.
+    
+    Takes a raw natural language description and uses AI to enhance it
+    into a more detailed and actionable workflow specification.
+    """
+    description: str = Field(..., description="Raw natural language workflow description")
+
+class WorkflowDescriptionEnhanceResponse(BaseModel):
+    """
+    Response model for workflow description enhancement.
+    
+    Contains the enhanced description along with questions and warnings
+    to help users refine their workflow specifications.
+    """
+    enhanced_description: str = Field(..., description="Enhanced and detailed workflow description")
+    questions: List[str] = Field(default_factory=list, description="Questions to clarify workflow requirements")
+    warnings: List[str] = Field(default_factory=list, description="Warnings about tool limitations or requirements")
+

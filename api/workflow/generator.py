@@ -194,13 +194,20 @@ IMPORTANT LIBRARY RESTRICTIONS:
 - For text processing, use built-in string methods and 're' module instead of nltk
 - For sentence splitting, use simple regex: re.split(r'[.!?]+', text)
 
+STRUCTURED OUTPUT BETWEEN STEPS:
+For workflow steps that extract or process information, use structured formats (JSON, lists, dicts) that make the output easy for subsequent steps to parse and use. Choose the most appropriate structure for each step's specific purpose.
+
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False) 
    *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
+   *** IMPORTANT: For document type identification, analyze documents ONE BY ONE to get clear ID-to-type mapping ***
 3. await paradigm_client.chat_completion(prompt: str, model: str = "Alfred 4.2")
 4. await paradigm_client.analyze_image(query: str, document_ids: List[str], model=None, private=False) - Analyze images in documents with AI-powered visual analysis
    *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
+
+CONTEXT PRESERVATION IN API PROMPTS:
+When creating prompts for API calls, include relevant context from the original workflow description: examples, formatting requirements, specific field names, and business rules mentioned by the user.
 
 WORKFLOW ACCESS TO ATTACHED FILES:
 - Use global variable 'attached_file_ids: List[int]' when files are attached
@@ -217,6 +224,65 @@ search_results = await paradigm_client.document_search(**search_kwargs)
 CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
 # OR for attached files: document_ids = [str(file_id) for file_id in attached_file_ids]
+
+CORRECT DOCUMENT TYPE IDENTIFICATION (analyze individually for clear mapping):
+def extract_document_type_from_response(analysis_response, expected_types):
+    \"\"\"
+    Extract document type from AI analysis response by finding best match with expected types.
+    Args:
+        analysis_response: The AI's response text
+        expected_types: List of expected document type names/keywords
+    Returns:
+        Best matching document type or "UNKNOWN" if no match found
+    \"\"\"
+    response_lower = analysis_response.lower()
+    
+    # Try exact matches first (case insensitive)
+    for doc_type in expected_types:
+        if doc_type.lower() in response_lower:
+            return doc_type
+    
+    # Try partial matches for compound names
+    for doc_type in expected_types:
+        type_words = doc_type.lower().split()
+        if len(type_words) > 1 and all(word in response_lower for word in type_words):
+            return doc_type
+    
+    # Try keyword-based matching for common patterns
+    type_keywords = {
+        "invoice": ["facture", "invoice", "bill"],
+        "contract": ["contrat", "contract", "agreement"],
+        "report": ["rapport", "report", "summary"],
+        "statement": ["relevé", "statement", "declaration"]
+    }
+    
+    for doc_type in expected_types:
+        type_lower = doc_type.lower()
+        for category, keywords in type_keywords.items():
+            if category in type_lower:
+                if any(keyword in response_lower for keyword in keywords):
+                    return doc_type
+    
+    return "UNKNOWN"
+
+# Usage example for document identification:
+expected_document_types = ["DC4", "BOAMP", "JOUE", "RIB", "Acte d'engagement"]  # Define based on workflow needs
+doc_type_mapping = {}
+for doc_id in document_ids:
+    # Use specific prompt that asks for precise identification
+    identification_prompt = f"Identifiez précisément le type de ce document. Répondez uniquement par le type exact parmi ces options : {', '.join(expected_document_types)}"
+    
+    type_analysis = await paradigm_client.analyze_documents_with_polling(
+        identification_prompt, 
+        [doc_id]  # Single document for clear mapping
+    )
+    doc_type_mapping[doc_id] = extract_document_type_from_response(type_analysis, expected_document_types)
+
+INCORRECT DOCUMENT TYPE IDENTIFICATION (analyzing multiple docs together):
+# DON'T DO THIS - loses document ID to type mapping
+all_docs_analysis = await paradigm_client.analyze_documents_with_polling(
+    "Identify document types", document_ids  # Multiple docs = unclear mapping
+)
 
 CRITICAL: DOCUMENT ANALYSIS 5-DOCUMENT LIMIT:
 # Document analysis can only handle 5 documents at a time
@@ -317,6 +383,147 @@ Generate a complete, self-contained workflow that:
             code = code.replace("def execute_workflow(", "async def execute_workflow(")
         
         return code
+
+    async def enhance_workflow_description(self, raw_description: str) -> Dict[str, Any]:
+        """
+        Enhance a raw workflow description using Claude AI to create a more detailed,
+        actionable workflow specification with proper tool usage and clear steps.
+        
+        Args:
+            raw_description: User's initial natural language workflow description
+            
+        Returns:
+            Dict containing enhanced description, questions, and warnings
+        """
+        enhancement_prompt = """You are an AI assistant that helps users create detailed workflow descriptions for automation systems.
+
+Your task is to analyze the user's raw workflow description and enhance it into a clear, detailed workflow specification that can be effectively implemented using the available Paradigm API tools.
+
+CRITICAL LANGUAGE PRESERVATION RULE:
+- ALWAYS respond in the SAME LANGUAGE as the user's input
+- NEVER translate specific terms, document names, field names, or technical terminology
+- If the user writes in French, respond entirely in French
+- If the user writes in English, respond entirely in English
+- Preserve ALL original terminology EXACTLY as provided
+- Maintain all specific names, acronyms, and regulatory terms without translation
+
+AVAILABLE PARADIGM API TOOLS:
+1. Document Search (paradigm_client.document_search) - Search through documents using natural language queries
+2. Document Analysis (paradigm_client.analyze_documents_with_polling) - Analyze specific documents with AI (max 5 documents at once)
+3. Chat Completion (paradigm_client.chat_completion) - General AI chat for text processing and analysis
+4. Image Analysis (paradigm_client.analyze_image) - Analyze images in documents (max 5 documents at once)
+
+ENHANCEMENT GUIDELINES:
+1. Break down the workflow into clear, specific steps
+2. For each step, clearly specify:
+   - What action will be performed
+   - Which Paradigm API tool will be used
+   - What input/output is expected
+   - Any processing logic needed
+   - All conditional logic (if/then/else statements)
+   - All rules, constraints, and requirements
+   - All edge cases and exception handling
+
+3. CRITICAL: Preserve EVERY detail from the original description with ZERO information loss
+4. Capture ALL conditional statements ("if this, then that", "when X occurs, do Y", etc.)
+5. Include ALL specific rules, constraints, validation requirements, and business logic
+6. Preserve ALL quantities, percentages, dates, formats, and technical specifications
+7. Keep ALL specific terms, names, and terminology EXACTLY as provided
+8. Document ALL decision points, branching logic, and alternative paths
+9. Include ALL error conditions, fallback mechanisms, and exception scenarios
+10. Maintain ALL dependencies between steps and prerequisite conditions
+11. Capture ALL data validation rules, format requirements, and compliance checks
+
+INFORMATION PRESERVATION REQUIREMENTS:
+- Document names (e.g., DC4, JOUE, BOAMP) must remain unchanged
+- Field names and section references must be preserved exactly
+- Legal and regulatory terms must not be translated
+- Company names, addresses, and identifiers must remain intact
+- Technical specifications and requirements must be kept verbatim
+- ALL conditional logic and if/then statements must be captured
+- ALL numerical values, percentages, thresholds must be preserved
+- ALL validation rules, format specifications must be included
+- ALL error conditions and fallback scenarios must be documented
+- ALL business rules and compliance requirements must be maintained
+- ALL decision trees and branching logic must be explicit
+
+LIMITATIONS TO CHECK FOR:
+- Web searching is NOT available - only document searching within Paradigm
+- External API calls (except Paradigm) are NOT available, unless full documentation for these is provided by the user in their initial description
+- Complex data processing libraries (pandas, numpy, etc.) are NOT available - try to avoid them if possible, if you do need these, clearly specify what imports are needed in the step description
+- Only built-in Python libraries and aiohttp are available
+
+OUTPUT FORMAT:
+CRITICAL: Provide your response as PLAIN TEXT ONLY. 
+DO NOT use JSON format. 
+DO NOT wrap your response in ```json or ``` blocks.
+DO NOT use curly braces { } or quotes around your response.
+Return the enhanced workflow steps directly in plain text using the step format structure below.
+
+STEP FORMAT STRUCTURE:
+For each workflow step, use this exact format:
+
+STEP X: [Highly detailed description of the workflow step with ALL information needed for an LLM to convert the step with all specific requirements (if/then statements, subtle rules, validation logic, API parameters, error conditions, etc.) into very clear code. There should be ABSOLUTELY NO information loss in this step description.]
+
+QUESTIONS AND LIMITATIONS: 
+- Write "None" if the step is crystal clear and entirely feasible with Paradigm tools alone. Think carefully about potential edge cases and missing information such as "if, then" statements that would clarify these. 
+- Otherwise, clearly list:
+  * Questions to clarify any ambiguities in the user's description
+  * Questions to get extra information needed (external API documentation, business rules, data formats, etc.)
+  * Indications that the step requires tools not available (web search, external APIs beyond Paradigm, etc.)
+
+The goal is that STEP X contains everything needed for code generation, and QUESTIONS AND LIMITATIONS only points out what's missing or impossible.
+
+EXAMPLES:
+
+Simple Input: "Search for documents about my question and analyze them"
+Plain Text Response:
+STEP 1: Search for relevant documents using paradigm_client.document_search with the user's query as the search parameter, setting company_scope=True and private_scope=True to search across all available document collections, and store the returned search results which contain document metadata including IDs, titles, and relevance scores.
+
+QUESTIONS AND LIMITATIONS: None
+
+---
+
+STEP 2: Extract document IDs from the search results by accessing the 'documents' array in the search response, converting each document's 'id' field to string format, and handling the API limitation that maximum 5 documents can be analyzed at once by implementing batching logic if more than 5 documents are found.
+
+QUESTIONS AND LIMITATIONS: None
+
+---
+
+STEP 3: Analyze the found documents using paradigm_client.analyze_documents_with_polling with the user's original question as the analysis query, implementing the polling mechanism with up to 5-minute timeout, processing documents in batches of maximum 5 documents per API call, and collecting all analysis results which contain AI-generated insights based on document content.
+
+QUESTIONS AND LIMITATIONS: None
+
+---
+
+STEP 4: Compile all analysis results from processed documents into a comprehensive summary by combining insights from all batches, formatting the response in clear, readable structure with proper line breaks and organization, including source document references for transparency, and returning the final formatted summary to the user.
+
+QUESTIONS AND LIMITATIONS: None
+
+Now enhance this workflow description and return ONLY the plain text response:"""
+
+        user_message = f"Raw workflow description: {raw_description}"
+        
+        try:
+            response = self.anthropic_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=12000,  # Increased for complex workflows
+                system=enhancement_prompt,
+                messages=[{"role": "user", "content": user_message}]
+            )
+            
+            result_text = response.content[0].text.strip()
+            
+            # Parse plain text response
+            return {
+                "enhanced_description": result_text or raw_description,
+                "questions": [],  # Questions are now embedded in each step
+                "warnings": []    # Warnings are now embedded in each step
+            }
+                
+        except Exception as e:
+            logger.error(f"Failed to enhance workflow description: {str(e)}")
+            raise Exception(f"Workflow description enhancement failed: {str(e)}")
 
     async def _validate_code(self, code: str) -> Dict[str, Any]:
         """

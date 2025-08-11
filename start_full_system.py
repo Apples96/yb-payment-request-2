@@ -56,10 +56,24 @@ def start_full_system():
         print("🚀 Starting Workflow Automation System...")
         print("=" * 50)
         
+        # Determine the correct Python interpreter (virtual environment if available)
+        python_executable = sys.executable
+        venv_python = Path(__file__).parent / "venv" / "bin" / "python"
+        venv_python_windows = Path(__file__).parent / "venv" / "Scripts" / "python.exe"
+        
+        if venv_python.exists():
+            python_executable = str(venv_python)
+            print(f"🐍 Using virtual environment Python: {python_executable}")
+        elif venv_python_windows.exists():
+            python_executable = str(venv_python_windows)
+            print(f"🐍 Using virtual environment Python: {python_executable}")
+        else:
+            print(f"🐍 Using system Python: {python_executable}")
+        
         # Start FastAPI backend
         print("📡 Starting FastAPI backend on http://localhost:8000...")
         backend_process = subprocess.Popen([
-            sys.executable, "-m", "api.main"
+            python_executable, "-m", "api.main"
         ], cwd=Path(__file__).parent)
         
         # Wait a moment for backend to start
@@ -68,7 +82,7 @@ def start_full_system():
         # Start frontend server from root directory (where index.html is now located)
         print("🌐 Starting frontend server on http://localhost:3000...")
         frontend_process = subprocess.Popen([
-            sys.executable, "-m", "http.server", "3000"
+            python_executable, "-m", "http.server", "3000"
         ], cwd=Path(__file__).parent)  # Changed from /frontend to root directory
         
         print("\n✅ Both servers are running!")

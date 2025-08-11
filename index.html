@@ -300,13 +300,25 @@ Architecture:
         <span>workflow builder</span>
     </h1>
     
-    <!-- Step 1: Create Workflow -->
+    <!-- Step 1: Describe Workflow -->
     <div class="container">
-        <h2>1. Create Workflow</h2>
-        <p>Describe a workflow using natural language:</p>
+        <h2>1. Describe Workflow</h2>
+        <p>Describe your desired workflow in natural language:</p>
+        <textarea id="rawWorkflowDescription" placeholder="Example: I want to search for documents about my question and then analyze them to provide a summary..." style="color: #999;"></textarea>
+        <button onclick="enhanceWorkflowDescription()">Enhance Description</button>
+        
+        <div id="enhancedDescriptionResult" style="margin-top: 15px;"></div>
+        <div id="enhancedDescription" style="display: none;"></div>
+    </div>
+
+    <!-- Step 2: Create Workflow -->
+    <div class="container">
+        <h2>2. Create Workflow</h2>
+        <p>Review and optionally edit the enhanced workflow description:</p>
         <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px; color: #666;">
             <strong>Available tools:</strong> document upload, chat, document search, document analysis, image analysis<br>
-            <strong>📚 API Reference:</strong> Detailed information about endpoints, parameters, and responses can be found in the <a href="https://paradigm.lighton.ai/api/schema/swagger-ui/#/" target="_blank" style="color: #007bff;">Paradigm API Swagger documentation</a>
+            <strong>📚 API Reference:</strong> Detailed information about endpoints, parameters, and responses can be found in the <a href="https://paradigm.lighton.ai/api/schema/swagger-ui/#/" target="_blank" style="color: #007bff;">Paradigm API Swagger documentation</a><br>
+            <strong>💡 Tip:</strong> Use Step 1 above to get an enhanced workflow description, or manually enter your workflow here.
         </div>
         <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information..." style="color: #999;"></textarea>
         <input type="text" id="workflowName" placeholder="Workflow name (optional)" />
@@ -320,9 +332,9 @@ Architecture:
         <div id="workflowResult"></div>
     </div>
 
-    <!-- Step 2: Test Workflow -->
+    <!-- Step 3: Test Workflow -->
     <div class="container">
-        <h2>2. Test Workflow</h2>
+        <h2>3. Test Workflow</h2>
         <p>Enter your query and optionally attach documents:</p>
         
         <!-- Query Input -->
@@ -346,10 +358,10 @@ Architecture:
         <div id="testResult" style="margin-top: 15px;"></div>
     </div>
 
-    <!-- Step 3: Update Workflow -->
+    <!-- Step 4: Update Workflow -->
     <div class="container">
-        <h2>3. Edit workflow</h2>
-        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results. After testing, go back to step 1, update your workflow description, and click "Create Workflow" again to generate an improved version.</p>
+        <h2>4. Edit workflow</h2>
+        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results. After testing, go back to step 1 or 2, update your workflow description, and regenerate to create an improved version.</p>
         
         <!-- Monitoring Helper Section -->
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
@@ -372,9 +384,9 @@ Architecture:
         </div>
     </div>
 
-    <!-- Step 4: Deploy Workflow API -->
+    <!-- Step 5: Deploy Workflow API -->
     <div class="container">
-        <h2>4. Deploy your workflow API endpoint</h2>
+        <h2>5. Deploy your workflow API endpoint</h2>
         <p>Deploy your workflow as a standalone API endpoint that can be called from external applications.</p>
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
@@ -493,9 +505,9 @@ if __name__ == "__main__":
         </div>
     </div>
 
-    <!-- Step 5: Add to Paradigm -->
+    <!-- Step 6: Add to Paradigm -->
     <div class="container">
-        <h2>5. Add your workflow to Paradigm</h2>
+        <h2>6. Add your workflow to Paradigm</h2>
         <p>Paradigm has a feature called "Third Party Tools" that allows you to create custom tools within the Paradigm UI. When you use the tool, it will execute your deployed workflow.</p>
         
         <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
@@ -548,9 +560,9 @@ if __name__ == "__main__":
         </div>
     </div>
 
-    <!-- Step 6: Test and Share -->
+    <!-- Step 7: Test and Share -->
     <div class="container">
-        <h2>6. 🚀 Test and share</h2>
+        <h2>7. 🚀 Test and share</h2>
         <p>You are now set up to use your workflow as a third party tool within Paradigm. The other users in your company can also access this tool, so spread the news and show them how it works!</p>
     </div>
 
@@ -590,8 +602,8 @@ if __name__ == "__main__":
         
          
         // Global configuration and state variables
-        // const API_BASE = 'http://localhost:8000'  // Local backend API base URL
-        const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
+        const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
+        // const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
@@ -946,6 +958,378 @@ if __name__ == "__main__":
         }
 
         // =============================================================
+        // FLEXIBLE ENHANCEMENT RESPONSE PARSING FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Flexible parser for enhancement responses - handles various AI output formats
+         * @param {Object} data - Raw response data from API
+         * @returns {Object} Normalized enhancement data
+         */
+        function parseEnhancementResponse(data) {
+            const result = {
+                description: '',
+                questions: [],
+                warnings: [],
+                sections: []
+            };
+            
+            // Handle standard JSON format
+            if (data.enhanced_description && typeof data.enhanced_description === 'string') {
+                result.description = data.enhanced_description;
+                result.questions = Array.isArray(data.questions) ? data.questions : [];
+                result.warnings = Array.isArray(data.warnings) ? data.warnings : [];
+                
+                // Try to parse structured description into sections
+                result.sections = parseStructuredDescription(data.enhanced_description);
+                return result;
+            }
+            
+            // Handle direct string response
+            if (typeof data === 'string') {
+                result.description = data;
+                result.sections = parseStructuredDescription(data);
+                return result;
+            }
+            
+            // Handle various object formats - be flexible with property names
+            const possibleDescriptionFields = [
+                'enhanced_description', 'description', 'workflow_description', 
+                'result', 'content', 'text', 'response'
+            ];
+            
+            const possibleQuestionFields = [
+                'questions', 'clarifications', 'needs_clarification', 'asks', 'queries'
+            ];
+            
+            const possibleWarningFields = [
+                'warnings', 'limitations', 'constraints', 'issues', 'notes', 'alerts'
+            ];
+            
+            // Find description field
+            for (const field of possibleDescriptionFields) {
+                if (data[field] && typeof data[field] === 'string') {
+                    result.description = data[field];
+                    break;
+                }
+            }
+            
+            // Find questions field
+            for (const field of possibleQuestionFields) {
+                if (data[field] && Array.isArray(data[field])) {
+                    result.questions = data[field];
+                    break;
+                } else if (data[field] && typeof data[field] === 'string') {
+                    result.questions = [data[field]];
+                    break;
+                }
+            }
+            
+            // Find warnings field
+            for (const field of possibleWarningFields) {
+                if (data[field] && Array.isArray(data[field])) {
+                    result.warnings = data[field];
+                    break;
+                } else if (data[field] && typeof data[field] === 'string') {
+                    result.warnings = [data[field]];
+                    break;
+                }
+            }
+            
+            // Parse structured content
+            if (result.description) {
+                result.sections = parseStructuredDescription(result.description);
+            }
+            
+            // Fallback: if no description found, stringify the entire response
+            if (!result.description) {
+                result.description = JSON.stringify(data, null, 2);
+                result.warnings.push("Response format was not recognized. Displaying raw content.");
+            }
+            
+            return result;
+        }
+        
+        /**
+         * Parse structured description text into sections for better display
+         * @param {string} description - The enhanced description text
+         * @returns {Array} Array of parsed sections
+         */
+        function parseStructuredDescription(description) {
+            const sections = [];
+            
+            if (!description || typeof description !== 'string') {
+                return sections;
+            }
+            
+            // Try to detect step-based format
+            const stepMatches = description.match(/STEP \\d+:.*?(?=STEP \\d+:|$)/gs);
+            if (stepMatches && stepMatches.length > 0) {
+                stepMatches.forEach((stepText, index) => {
+                    const section = parseStepSection(stepText, index + 1);
+                    if (section) sections.push(section);
+                });
+                return sections;
+            }
+            
+            // Try to detect numbered list format
+            const numberedMatches = description.match(/^\\d+\\..+?(?=^\\d+\\.|$)/gm);
+            if (numberedMatches && numberedMatches.length > 0) {
+                numberedMatches.forEach((stepText, index) => {
+                    sections.push({
+                        type: 'numbered_step',
+                        number: index + 1,
+                        title: stepText.substring(0, 100).trim() + (stepText.length > 100 ? '...' : ''),
+                        content: stepText.trim(),
+                        context: null,
+                        questions: null,
+                        limitations: null
+                    });
+                });
+                return sections;
+            }
+            
+            // Try to detect any other structured format with headers
+            const headerMatches = description.match(/(^|\\n)[A-Z][A-Z\\s]{2,}:.*?(?=(^|\\n)[A-Z][A-Z\\s]{2,}:|$)/gs);
+            if (headerMatches && headerMatches.length > 0) {
+                headerMatches.forEach((sectionText, index) => {
+                    const lines = sectionText.trim().split('\\n');
+                    const header = lines[0].replace(':', '').trim();
+                    const content = lines.slice(1).join('\\n').trim();
+                    
+                    sections.push({
+                        type: 'header_section',
+                        number: index + 1,
+                        title: header,
+                        content: content || header,
+                        context: null,
+                        questions: null,
+                        limitations: null
+                    });
+                });
+                return sections;
+            }
+            
+            // Fallback: treat as single section
+            sections.push({
+                type: 'single_section',
+                number: 1,
+                title: 'Enhanced Workflow Description',
+                content: description,
+                context: null,
+                questions: null,
+                limitations: null
+            });
+            
+            return sections;
+        }
+        
+        /**
+         * Parse a STEP section with subsections
+         * @param {string} stepText - Text of a single step
+         * @param {number} stepNumber - Step number
+         * @returns {Object} Parsed step section
+         */
+        function parseStepSection(stepText, stepNumber) {
+            const section = {
+                type: 'detailed_step',
+                number: stepNumber,
+                title: '',
+                content: '',
+                context: null,
+                questions: null,
+                limitations: null
+            };
+            
+            // Extract main step description
+            const stepMatch = stepText.match(/STEP \\d+:\\s*([^\\n]+)/);
+            if (stepMatch) {
+                section.title = stepMatch[1].trim();
+            }
+            
+            // Extract QUESTIONS AND LIMITATIONS section
+            const questionsAndLimitationsMatch = stepText.match(/QUESTIONS AND LIMITATIONS:\\s*([\\s\\S]*?)$/i);
+            if (questionsAndLimitationsMatch) {
+                const qlText = questionsAndLimitationsMatch[1].trim();
+                if (qlText.toLowerCase() !== 'none' && qlText.toLowerCase() !== 'none.') {
+                    // Parse both questions and limitations from the combined section
+                    const items = qlText.split('\\n').filter(q => q.trim()).map(q => q.replace(/^-\\s*/, '').trim());
+                    section.questions = items; // Store all items as questions for now
+                    section.limitations = items; // Display in both sections
+                } else {
+                    section.questions = null;
+                    section.limitations = null;
+                }
+            }
+            
+            // Set content as the title if no other content
+            section.content = section.title;
+            
+            return section;
+        }
+        
+        /**
+         * Render enhancement result with flexible formatting
+         * @param {Object} enhancedData - Parsed enhancement data
+         * @returns {string} HTML string for display
+         */
+        function renderEnhancementResult(enhancedData) {
+            let html = '<div class="result success">';
+            html += '<h3 style="margin-top: 0; color: #28a745;">✅ Workflow description enhanced successfully!</h3>';
+            
+            // Render sections if available
+            if (enhancedData.sections && enhancedData.sections.length > 0) {
+                html += '<div style="margin: 15px 0;">';
+                html += '<h4 style="color: #333; margin-bottom: 15px;">📋 Enhanced Workflow Steps:</h4>';
+                
+                enhancedData.sections.forEach(section => {
+                    html += renderSection(section);
+                });
+                
+                html += '</div>';
+            } else {
+                // Fallback to simple description display
+                html += '<div style="margin: 15px 0;">';
+                html += '<h4 style="color: #333; margin-bottom: 10px;">📋 Enhanced Description:</h4>';
+                html += `<div style="background: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #28a745; white-space: pre-line; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.5;">${enhancedData.description}</div>`;
+                html += '</div>';
+            }
+            
+            // Render global questions if any
+            if (enhancedData.questions && enhancedData.questions.length > 0) {
+                html += '<div style="margin: 15px 0;">';
+                html += '<h4 style="color: #ff9900; margin-bottom: 10px;">❓ Overall Questions:</h4>';
+                html += '<ul style="margin: 0; padding-left: 20px; background: #fff3cd; padding: 10px 10px 10px 30px; border-radius: 4px; border-left: 4px solid #ffc107;">';
+                enhancedData.questions.forEach(q => {
+                    html += `<li style="margin-bottom: 5px; color: #856404;">${q}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            // Render global warnings if any
+            if (enhancedData.warnings && enhancedData.warnings.length > 0) {
+                html += '<div style="margin: 15px 0;">';
+                html += '<h4 style="color: #dc3545; margin-bottom: 10px;">⚠️ Overall Warnings:</h4>';
+                html += '<ul style="margin: 0; padding-left: 20px; background: #f8d7da; padding: 10px 10px 10px 30px; border-radius: 4px; border-left: 4px solid #dc3545;">';
+                enhancedData.warnings.forEach(w => {
+                    html += `<li style="margin-bottom: 5px; color: #721c24;">${w}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        /**
+         * Render a single section with appropriate formatting
+         * @param {Object} section - Section data
+         * @returns {string} HTML string for the section
+         */
+        function renderSection(section) {
+            let html = '<div style="border: 1px solid #e9ecef; border-radius: 6px; margin-bottom: 15px; overflow: hidden;">';
+            
+            // Section header
+            html += `<div style="background: #f8f9fa; padding: 12px 15px; border-bottom: 1px solid #e9ecef;">`;
+            html += `<h5 style="margin: 0; color: #495057; font-weight: 600;">Step ${section.number}: ${section.title}</h5>`;
+            html += '</div>';
+            
+            // Section content
+            html += '<div style="padding: 15px;">';
+            
+            if (section.content && section.content !== section.title) {
+                html += `<div style="margin-bottom: 12px; color: #333; line-height: 1.5;">${section.content.replace(/\\n/g, '<br>')}</div>`;
+            }
+            
+            // Additional context
+            if (section.context) {
+                html += '<div style="margin-bottom: 12px;">';
+                html += '<strong style="color: #007bff; font-size: 14px;">📚 Additional Context:</strong>';
+                html += `<div style="margin-top: 5px; padding: 10px; background: #f0f7ff; border-left: 3px solid #007bff; font-size: 13px; line-height: 1.4;">${section.context.replace(/\\n/g, '<br>')}</div>`;
+                html += '</div>';
+            }
+            
+            // Questions and Limitations (combined section)
+            if (section.questions && section.questions.length > 0) {
+                html += '<div style="margin-bottom: 12px;">';
+                html += '<strong style="color: #dc3545; font-size: 14px;">❓ Questions and Limitations:</strong>';
+                html += '<ul style="margin: 5px 0 0 0; padding-left: 20px; background: #fff3e0; padding: 8px 8px 8px 25px; border-left: 3px solid #ff9900; font-size: 13px;">';
+                section.questions.forEach(q => {
+                    html += `<li style="margin-bottom: 4px; color: #e65100;">${q}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        // =============================================================
+        // WORKFLOW DESCRIPTION ENHANCEMENT FUNCTIONS
+        // =============================================================
+        
+        /**
+         * Enhance the user's workflow description using Claude AI.
+         * Takes raw user input and transforms it into an optimal workflow description.
+         */
+        async function enhanceWorkflowDescription() {
+            const rawDescription = document.getElementById('rawWorkflowDescription').value.trim();
+            const resultDiv = document.getElementById('enhancedDescriptionResult');
+            const enhancedDiv = document.getElementById('enhancedDescription');
+            
+            if (!rawDescription) {
+                showResult(resultDiv, 'Please enter a workflow description', 'error');
+                addLog('❌ No raw workflow description provided', 'error');
+                return;
+            }
+
+            showResult(resultDiv, 'Enhancing workflow description...', 'loading');
+            addLog('🚀 Starting workflow description enhancement...', 'info');
+
+            try {
+                const { response, data } = await loggedFetch(`${API_BASE}/workflows/enhance-description`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        description: rawDescription
+                    })
+                }, 'ENHANCE WORKFLOW DESCRIPTION');
+
+                if (response.ok) {
+                    // Flexible parsing - handle various response formats
+                    const enhancedData = parseEnhancementResponse(data);
+                    
+                    // Update the Create Workflow step with enhanced description
+                    document.getElementById('workflowDescription').value = enhancedData.description;
+                    document.getElementById('workflowDescription').style.color = '#333';
+                    
+                    // Store enhanced description
+                    enhancedDiv.innerHTML = enhancedData.description;
+                    
+                    // Create formatted display using flexible renderer
+                    const formattedHtml = renderEnhancementResult(enhancedData);
+                    resultDiv.innerHTML = formattedHtml;
+                    
+                    // Add instruction message
+                    const instructionDiv = document.createElement('div');
+                    instructionDiv.style.cssText = 'background: #e3f2fd; padding: 15px; border-radius: 4px; margin-top: 15px; border-left: 4px solid #2196f3; font-size: 14px;';
+                    instructionDiv.innerHTML = '<strong>💡 Next Steps:</strong><br>' +
+                        '• If this workflow description looks good → Proceed to <strong>Step 2</strong> to create the workflow<br>' +
+                        '• If you need to address questions or warnings → Refine your input above and enhance again<br>' +
+                        '• You can also manually edit the description in Step 2 before generating code';
+                    resultDiv.appendChild(instructionDiv);
+                    
+                } else {
+                    showResult(resultDiv, `❌ Error: ${data.detail || 'Failed to enhance workflow description'}`, 'error');
+                }
+            } catch (error) {
+                showResult(resultDiv, `❌ Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        // =============================================================
         // WORKFLOW MANAGEMENT FUNCTIONS
         // =============================================================
         
@@ -1245,9 +1629,40 @@ if __name__ == "__main__":
                 "Search for documents, extract key information using chat completion, then analyze specific documents for deeper insights."
             ];
             
-            // Set up example text behavior for workflow description
+            // Set up example text behavior for raw workflow description
+            const rawWorkflowTextarea = document.getElementById('rawWorkflowDescription');
+            const rawExampleText = "I want to search for documents about my question and then analyze them to provide a summary.";
+            
+            // Set initial example text for raw description
+            rawWorkflowTextarea.value = rawExampleText;
+            rawWorkflowTextarea.style.color = '#999';
+            
+            // Handle focus - clear example text when user starts typing
+            rawWorkflowTextarea.addEventListener('focus', function() {
+                if (this.value === rawExampleText) {
+                    this.value = '';
+                    this.style.color = '#333';
+                }
+            });
+            
+            // Handle blur - restore example text if field is empty
+            rawWorkflowTextarea.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = rawExampleText;
+                    this.style.color = '#999';
+                }
+            });
+            
+            // Handle input - change color when user types
+            rawWorkflowTextarea.addEventListener('input', function() {
+                if (this.value !== rawExampleText) {
+                    this.style.color = '#333';
+                }
+            });
+            
+            // Set up example text behavior for enhanced workflow description
             const workflowTextarea = document.getElementById('workflowDescription');
-            const exampleText = "Search for documents about the user's question, then analyze those documents to provide a detailed summary.";
+            const exampleText = "Enhanced workflow description will appear here...";
             
             // Set initial example text
             workflowTextarea.value = exampleText;

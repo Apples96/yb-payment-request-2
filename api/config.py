@@ -48,7 +48,7 @@ class Settings:
         self.lighton_docsearch_endpoint: str = "/api/v2/chat/document-search"
         
         # Workflow execution settings
-        self.max_execution_time: int = 600  # 10 minutes maximum execution time
+        self.max_execution_time: int = 1800  # 20 minutes maximum execution time
         self.max_workflow_steps: int = 50   # Maximum number of workflow steps
         
     def validate(self) -> None:

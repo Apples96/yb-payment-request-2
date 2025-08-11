@@ -50,6 +50,8 @@ from .models import (
     FileQuestionRequest,
     FileQuestionResponse,
     WorkflowWithFilesRequest,
+    WorkflowDescriptionEnhanceRequest,
+    WorkflowDescriptionEnhanceResponse,
 )
 from .workflow.generator import workflow_generator
 from .workflow.executor import workflow_executor
@@ -176,6 +178,56 @@ async def health_check():
         "status": "healthy", 
         "timestamp": datetime.utcnow().isoformat()
     }
+
+@api_router.post("/workflows/enhance-description", response_model=WorkflowDescriptionEnhanceResponse, tags=["Workflows"])
+async def enhance_workflow_description(request: WorkflowDescriptionEnhanceRequest):
+    """
+    Enhance a raw workflow description using Claude AI.
+    
+    Takes a user's initial natural language workflow description and transforms it
+    into a detailed, actionable workflow specification with clear steps, proper
+    tool usage, and identification of any missing information or limitations.
+    
+    Args:
+        request: Enhancement request containing the raw workflow description
+        
+    Returns:
+        WorkflowDescriptionEnhanceResponse: Enhanced description with questions and warnings
+        
+    Raises:
+        HTTPException: 503 if API keys are missing, 500 if enhancement fails
+        
+    Example:
+        POST /workflows/enhance-description
+        {
+            "description": "Search for documents and analyze them"
+        }
+        
+        Returns enhanced description with specific steps and tool usage details.
+    """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
+    try:
+        logger.info(f"Enhancing workflow description: {request.description[:100]}...")
+        
+        # Enhance the description
+        result = await workflow_generator.enhance_workflow_description(request.description)
+        
+        logger.info("Workflow description enhanced successfully")
+        
+        return WorkflowDescriptionEnhanceResponse(
+            enhanced_description=result["enhanced_description"],
+            questions=result["questions"],
+            warnings=result["warnings"]
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to enhance workflow description: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to enhance workflow description: {str(e)}"
+        )
 
 @api_router.post("/workflows", response_model=WorkflowResponse, tags=["Workflows"])
 async def create_workflow(request: WorkflowCreateRequest):
