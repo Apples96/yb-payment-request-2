@@ -94,7 +94,8 @@ Return only the Python code, no explanations or markdown formatting."""
 
     payload = {
         "model": "claude-sonnet-4-20250514",
-        "max_tokens": 15000,
+        "max_tokens": 18000,
+        "temperature": 0,
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_prompt}]
     }
@@ -141,6 +142,7 @@ async def anthropic_chat_completion(prompt: str, system_prompt: Optional[str] = 
     payload = {
         "model": "claude-sonnet-4-20250514",
         "max_tokens": 1000,
+        "temperature": 0,
         "system": system_prompt or "You are a helpful assistant.",
         "messages": [{"role": "user", "content": prompt}]
     }

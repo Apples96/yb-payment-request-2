@@ -64,6 +64,17 @@ class WorkflowExecuteRequest(BaseModel):
     user_input: str = Field(..., description="Input data to process through the workflow")
     attached_file_ids: Optional[List[int]] = Field(None, description="List of file IDs attached to this query")
 
+class WorkflowCodeExecuteRequest(BaseModel):
+    """
+    Request model for executing workflow code directly.
+    
+    Contains the raw workflow code, user input, and optional file attachments.
+    Used for testing custom or modified workflow code without storing it.
+    """
+    code: str = Field(..., description="Complete workflow code to execute")
+    user_input: str = Field(..., description="Input data to process through the workflow")
+    attached_file_ids: Optional[List[int]] = Field(None, description="List of file IDs attached to this query")
+
 class WorkflowResponse(BaseModel):
     """
     Standard response model for workflow operations.

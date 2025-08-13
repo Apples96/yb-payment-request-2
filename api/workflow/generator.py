@@ -191,14 +191,13 @@ IMPORTANT LIBRARY RESTRICTIONS:
 - Only use built-in Python libraries (asyncio, json, logging, typing, re, etc.)
 - Only use aiohttp for HTTP requests (already included in template)
 - DO NOT import external libraries like nltk, requests, pandas, numpy, etc.
-- For text processing, use built-in string methods and 're' module instead of nltk
-- For sentence splitting, use simple regex: re.split(r'[.!?]+', text)
-
-STRUCTURED OUTPUT BETWEEN STEPS:
-For workflow steps that extract or process information, use structured formats (JSON, lists, dicts) that make the output easy for subsequent steps to parse and use. Choose the most appropriate structure for each step's specific purpose.
 
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
+   *** CRITICAL SCOPING: Use file_ids for SPECIFIC documents OR company_scope/private_scope for BROAD search, NOT both together ***
+   *** When file_ids is specified, do NOT set company_scope/private_scope (this would expand search beyond target documents) ***
+   *** For specific document search: file_ids=[doc_ids] only ***
+   *** For broad search: company_scope=True, private_scope=True only ***
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False) 
    *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
    *** IMPORTANT: For document type identification, analyze documents ONE BY ONE to get clear ID-to-type mapping ***
@@ -210,79 +209,32 @@ CONTEXT PRESERVATION IN API PROMPTS:
 When creating prompts for API calls, include relevant context from the original workflow description: examples, formatting requirements, specific field names, and business rules mentioned by the user.
 
 WORKFLOW ACCESS TO ATTACHED FILES:
-- Use global variable 'attached_file_ids: List[int]' when files are attached
-- Pass these IDs to file_ids parameter in document_search (omit parameter if no files attached)
-- For direct document analysis: attached_file_ids ARE the document IDs - use them directly
+- Get attached files with: attached_file_ids = globals().get('attached_file_ids', [])
+- Pass these IDs to file_ids parameter in document_search
+- For document analysis: use attached_file_ids directly as document IDs
 - Extract document IDs from search results for analysis ONLY when searching, not when using attached files
 
-CORRECT FILE_IDS USAGE:
-search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
-if 'attached_file_ids' in globals() and attached_file_ids:
-    search_kwargs["file_ids"] = attached_file_ids
+CORRECT DOCUMENT SEARCH SCOPING:
+# Get attached files (empty list if none)
+attached_file_ids = globals().get('attached_file_ids', [])
+
+# For specific document search (when targeting particular documents):
+if attached_file_ids:
+    search_kwargs = {"query": query, "file_ids": attached_file_ids}
+# For broad search (when no specific documents are targeted):
+else:
+    search_kwargs = {"query": query, "company_scope": True, "private_scope": True}
+
 search_results = await paradigm_client.document_search(**search_kwargs)
 
-CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS:
+# Alternative pattern for workflows that need to specify target documents:
+target_document_ids = [123, 456, 789]  # Replace with actual document IDs
+search_kwargs = {"query": query, "file_ids": target_document_ids}
+# DO NOT add company_scope/private_scope when using file_ids for specific document targeting
+
+CORRECT DOCUMENT_IDS EXTRACTION FOR ANALYSIS OR SEARCH:
 document_ids = [str(doc["id"]) for doc in search_results.get("documents", [])]  # Convert to strings
 # OR for attached files: document_ids = [str(file_id) for file_id in attached_file_ids]
-
-CORRECT DOCUMENT TYPE IDENTIFICATION (analyze individually for clear mapping):
-def extract_document_type_from_response(analysis_response, expected_types):
-    \"\"\"
-    Extract document type from AI analysis response by finding best match with expected types.
-    Args:
-        analysis_response: The AI's response text
-        expected_types: List of expected document type names/keywords
-    Returns:
-        Best matching document type or "UNKNOWN" if no match found
-    \"\"\"
-    response_lower = analysis_response.lower()
-    
-    # Try exact matches first (case insensitive)
-    for doc_type in expected_types:
-        if doc_type.lower() in response_lower:
-            return doc_type
-    
-    # Try partial matches for compound names
-    for doc_type in expected_types:
-        type_words = doc_type.lower().split()
-        if len(type_words) > 1 and all(word in response_lower for word in type_words):
-            return doc_type
-    
-    # Try keyword-based matching for common patterns
-    type_keywords = {
-        "invoice": ["facture", "invoice", "bill"],
-        "contract": ["contrat", "contract", "agreement"],
-        "report": ["rapport", "report", "summary"],
-        "statement": ["relevé", "statement", "declaration"]
-    }
-    
-    for doc_type in expected_types:
-        type_lower = doc_type.lower()
-        for category, keywords in type_keywords.items():
-            if category in type_lower:
-                if any(keyword in response_lower for keyword in keywords):
-                    return doc_type
-    
-    return "UNKNOWN"
-
-# Usage example for document identification:
-expected_document_types = ["DC4", "BOAMP", "JOUE", "RIB", "Acte d'engagement"]  # Define based on workflow needs
-doc_type_mapping = {}
-for doc_id in document_ids:
-    # Use specific prompt that asks for precise identification
-    identification_prompt = f"Identifiez précisément le type de ce document. Répondez uniquement par le type exact parmi ces options : {', '.join(expected_document_types)}"
-    
-    type_analysis = await paradigm_client.analyze_documents_with_polling(
-        identification_prompt, 
-        [doc_id]  # Single document for clear mapping
-    )
-    doc_type_mapping[doc_id] = extract_document_type_from_response(type_analysis, expected_document_types)
-
-INCORRECT DOCUMENT TYPE IDENTIFICATION (analyzing multiple docs together):
-# DON'T DO THIS - loses document ID to type mapping
-all_docs_analysis = await paradigm_client.analyze_documents_with_polling(
-    "Identify document types", document_ids  # Multiple docs = unclear mapping
-)
 
 CRITICAL: DOCUMENT ANALYSIS 5-DOCUMENT LIMIT:
 # Document analysis can only handle 5 documents at a time
@@ -300,12 +252,6 @@ if len(document_ids) > 5:
 else:
     # Process all documents at once (5 or fewer)
     final_analysis = await paradigm_client.analyze_documents_with_polling(query, document_ids)
-
-CORRECT TEXT PROCESSING (using built-in libraries):
-import re
-def split_sentences(text):
-    sentences = re.split(r'[.!?]+', text)
-    return [s.strip() for s in sentences if s.strip()]
 
 CORRECT SEARCH RESULT USAGE:
 search_result = await paradigm_client.document_search(**search_kwargs)
@@ -337,7 +283,8 @@ Generate a complete, self-contained workflow that:
         try:
             response = self.anthropic_client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=15000,  # Increased for full code generation
+                max_tokens=18000,  # Increased for full code generation
+                temperature=0,  # For reproducible results
                 system=system_prompt,
                 messages=[{"role": "user", "content": enhanced_description}]
             )
@@ -413,7 +360,7 @@ AVAILABLE PARADIGM API TOOLS:
 3. Chat Completion (paradigm_client.chat_completion) - General AI chat for text processing and analysis
 4. Image Analysis (paradigm_client.analyze_image) - Analyze images in documents (max 5 documents at once)
 
-ENHANCEMENT GUIDELINES:
+CRITICAL INFORMATION : ENHANCEMENT GUIDELINES:
 1. Break down the workflow into clear, specific steps
 2. For each step, clearly specify:
    - What action will be performed
@@ -463,7 +410,7 @@ Return the enhanced workflow steps directly in plain text using the step format 
 STEP FORMAT STRUCTURE:
 For each workflow step, use this exact format:
 
-STEP X: [Highly detailed description of the workflow step with ALL information needed for an LLM to convert the step with all specific requirements (if/then statements, subtle rules, validation logic, API parameters, error conditions, etc.) into very clear code. There should be ABSOLUTELY NO information loss in this step description.]
+STEP X: [Highly detailed description of the workflow step with ALL information needed for an LLM to convert the step with all specific requirements (if/then statements, subtle rules, validation logic, API parameters, error conditions, etc.) into very clear code. There should be ABSOLUTELY NO information loss in this step description. Each step should respect the ENHANCEMENT GUIDELINES described above.]
 
 QUESTIONS AND LIMITATIONS: 
 - Write "None" if the step is crystal clear and entirely feasible with Paradigm tools alone. Think carefully about potential edge cases and missing information such as "if, then" statements that would clarify these. 
@@ -507,7 +454,8 @@ Now enhance this workflow description and return ONLY the plain text response:""
         try:
             response = self.anthropic_client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=12000,  # Increased for complex workflows
+                max_tokens=18000,  # Increased for complex workflows
+                temperature=0,  # For reproducible results
                 system=enhancement_prompt,
                 messages=[{"role": "user", "content": user_message}]
             )

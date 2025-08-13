@@ -75,6 +75,46 @@ class WorkflowExecutor:
         
         return execution
     
+    async def execute_code_directly(self, code: str, user_input: str, attached_file_ids: Optional[List[int]] = None) -> WorkflowExecution:
+        """
+        Execute workflow code directly without requiring a stored workflow.
+        
+        Args:
+            code: Complete workflow code to execute
+            user_input: Input data for the workflow
+            attached_file_ids: Optional list of file IDs attached to this execution
+        
+        Returns:
+            WorkflowExecution object with results
+        """
+        execution = WorkflowExecution(
+            workflow_id="direct-code-execution",
+            user_input=user_input,
+            status=ExecutionStatus.RUNNING
+        )
+        
+        self.executions[execution.id] = execution
+        
+        start_time = time.time()
+        
+        try:
+            # Execute the workflow code
+            result = await self._execute_code_safely(code, user_input, attached_file_ids)
+            execution_time = time.time() - start_time
+            
+            execution.mark_completed(result, execution_time)
+            
+        except asyncio.TimeoutError:
+            execution_time = time.time() - start_time
+            execution.status = ExecutionStatus.TIMEOUT
+            execution.mark_failed("Execution timeout", execution_time)
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            execution.mark_failed(str(e), execution_time)
+        
+        return execution
+    
     async def _execute_code_safely(self, code: str, user_input: str, attached_file_ids: Optional[List[int]] = None) -> str:
         """
         Safely execute the generated workflow code with timeout

@@ -335,6 +335,16 @@ Architecture:
     <!-- Step 3: Test Workflow -->
     <div class="container">
         <h2>3. Test Workflow</h2>
+        
+        <!-- Generated Code Section -->
+        <div style="margin: 15px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">💻 Generated Workflow Code:</label>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px; color: #666;">
+                <strong>💡 Tip:</strong> The generated code will appear here automatically after creating a workflow. You can edit it before testing if needed.
+            </div>
+            <textarea id="workflowCode" placeholder="Generated workflow code will appear here after creating a workflow..." style="height: 200px; font-family: 'Courier New', monospace; font-size: 12px; color: #999;"></textarea>
+        </div>
+
         <p>Enter your query and optionally attach documents:</p>
         
         <!-- Query Input -->
@@ -1367,6 +1377,13 @@ if __name__ == "__main__":
                     currentWorkflowId = data.id;
                     document.getElementById('testButton').disabled = false;
                     
+                    // Populate the code textarea with generated code
+                    const codeTextarea = document.getElementById('workflowCode');
+                    if (data.generated_code) {
+                        codeTextarea.value = data.generated_code;
+                        codeTextarea.style.color = '#333';
+                    }
+                    
                     const resultMessage = `✅ Workflow created successfully!\n\nID: ${data.id}\nName: ${data.name || 'Unnamed'}\nStatus: ${data.status}\n\nGenerated Code:\n${data.generated_code || 'No code generated'}`;
                     
                     showResult(resultDiv, resultMessage, 'success');
@@ -1383,18 +1400,14 @@ if __name__ == "__main__":
          * Runs the generated workflow code and displays results with detailed logging.
          */
         async function executeWorkflowWithQuery() {
-            if (!currentWorkflowId) {
-                alert('Please create a workflow first');
-                addLog('❌ No workflow to execute', 'error');
-                return;
-            }
-
             const query = document.getElementById('testQuery').value.trim();
             const resultDiv = document.getElementById('testResult');
+            const workflowCode = document.getElementById('workflowCode').value.trim();
             
-            if (!query) {
-                showResult(resultDiv, 'Please enter a query', 'error');
-                addLog('❌ No query provided', 'error');
+            // Check if we have custom code or need to use stored workflow
+            if (!workflowCode && !currentWorkflowId) {
+                alert('Please create a workflow first or enter custom code');
+                addLog('❌ No workflow or code to execute', 'error');
                 return;
             }
 
@@ -1404,30 +1417,64 @@ if __name__ == "__main__":
 
             showResult(resultDiv, 'Executing workflow... (this may take up to 5 minutes for document analysis)', 'loading');
             addLog('🚀 Starting workflow execution...', 'info');
-            addLog(`🎯 WORKFLOW ID: ${currentWorkflowId}`, 'response');
-            addLog(`📝 USER QUERY: ${query}`, 'query');
+            
+            if (workflowCode) {
+                addLog(`💻 USING CUSTOM CODE: ${workflowCode.length} characters`, 'response');
+            } else {
+                addLog(`🎯 USING STORED WORKFLOW ID: ${currentWorkflowId}`, 'response');
+            }
+            
+            if (query) {
+                addLog(`📝 USER QUERY: ${query}`, 'query');
+            } else {
+                addLog(`📝 USER QUERY: [empty - workflow will run without input]`, 'query');
+            }
             
             if (hasAttachments) {
                 addLog(`📎 ATTACHED DOCUMENTS: ${attachmentIds.length} files [${attachmentIds.join(', ')}]`, 'docs');
             }
 
             try {
-                // Prepare execution payload with attached files
-                let executionPayload = {
-                    user_input: query
-                };
+                let apiCall;
                 
-                if (hasAttachments) {
-                    executionPayload.attached_file_ids = attachmentIds;
+                if (workflowCode) {
+                    // Execute custom code directly
+                    let codeExecutionPayload = {
+                        code: workflowCode,
+                        user_input: query || ""
+                    };
+                    
+                    if (hasAttachments) {
+                        codeExecutionPayload.attached_file_ids = attachmentIds;
+                    }
+
+                    apiCall = loggedFetch(`${API_BASE}/workflows/execute-code`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(codeExecutionPayload)
+                    }, 'EXECUTE CUSTOM WORKFLOW CODE');
+                } else {
+                    // Execute stored workflow
+                    let executionPayload = {
+                        user_input: query || ""
+                    };
+                    
+                    if (hasAttachments) {
+                        executionPayload.attached_file_ids = attachmentIds;
+                    }
+
+                    apiCall = loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(executionPayload)
+                    }, 'EXECUTE STORED WORKFLOW');
                 }
 
-                const { response, data } = await loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(executionPayload)
-                }, 'EXECUTE WORKFLOW WITH QUERY');
+                const { response, data } = await apiCall;
 
                 if (response.ok) {
                     const executionTime = data.execution_time ? `${data.execution_time.toFixed(2)}s` : 'N/A';
@@ -1542,6 +1589,10 @@ if __name__ == "__main__":
                         
                         if (hasAttachments) {
                             resultMessage += `\nProcessed ${attachmentIds.length} attached document(s)`;
+                        }
+                        
+                        if (!query && !hasAttachments) {
+                            resultMessage += `\nExecuted workflow without input or attachments`;
                         }
                         
                         resultMessage += `\n\n=== RESULT ===\n${data.result}`;
@@ -1687,6 +1738,37 @@ if __name__ == "__main__":
             // Handle input - change color when user types
             workflowTextarea.addEventListener('input', function() {
                 if (this.value !== exampleText) {
+                    this.style.color = '#333';
+                }
+            });
+
+            // Set up example text behavior for workflow code textarea
+            const codeTextarea = document.getElementById('workflowCode');
+            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            // Set initial example text
+            codeTextarea.value = codeExampleText;
+            codeTextarea.style.color = '#999';
+            
+            // Handle focus - clear example text when user starts typing
+            codeTextarea.addEventListener('focus', function() {
+                if (this.value === codeExampleText) {
+                    this.value = '';
+                    this.style.color = '#333';
+                }
+            });
+            
+            // Handle blur - restore example text if field is empty
+            codeTextarea.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = codeExampleText;
+                    this.style.color = '#999';
+                }
+            });
+            
+            // Handle input - change color when user types
+            codeTextarea.addEventListener('input', function() {
+                if (this.value !== codeExampleText) {
                     this.style.color = '#333';
                 }
             });

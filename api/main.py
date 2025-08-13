@@ -42,6 +42,7 @@ from .config import settings
 from .models import (
     WorkflowCreateRequest,
     WorkflowExecuteRequest,
+    WorkflowCodeExecuteRequest,
     WorkflowResponse,
     WorkflowExecutionResponse,
     ErrorResponse,
@@ -388,6 +389,54 @@ async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
             status_code=500,
             detail=f"Failed to execute workflow: {str(e)}"
         )
+
+@api_router.post("/workflows/execute-code", response_model=WorkflowExecutionResponse, tags=["Execution"])
+async def execute_workflow_code(request: WorkflowCodeExecuteRequest):
+    """
+    Execute workflow code directly without requiring a stored workflow.
+    
+    Takes raw workflow code and executes it directly with the provided
+    user input and optional file attachments. Useful for testing modified code
+    before storing it as a workflow.
+    
+    Args:
+        request: Code execution request containing code, user input, and optional file IDs
+        
+    Returns:
+        WorkflowExecutionResponse: Execution results including status, timing, and output
+        
+    Raises:
+        HTTPException: If code execution fails
+        
+    Note:
+        The code will have access to global 'attached_file_ids' variable
+        containing the list of file IDs from request.attached_file_ids
+    """
+    try:
+        logger.info(f"Executing workflow code directly")
+        logger.info(f"User input: {request.user_input[:100]}...")
+        logger.info(f"Code length: {len(request.code)} characters")
+        if request.attached_file_ids:
+            logger.info(f"Attached files: {request.attached_file_ids}")
+        
+        # Execute the code directly using workflow executor's safe execution method
+        execution = await workflow_executor.execute_code_directly(request.code, request.user_input, request.attached_file_ids)
+        
+        logger.info(f"Code execution completed: {execution.id} (status: {execution.status})")
+        
+        return WorkflowExecutionResponse(
+            workflow_id="direct-code-execution",
+            execution_id=execution.id,
+            result=execution.result,
+            status=execution.status.value,
+            execution_time=execution.execution_time,
+            error=execution.error,
+            created_at=execution.created_at
+        )
+        
+    except Exception as e:
+        logger.error(f"Code execution error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Code execution failed: {str(e)}")
 
 @api_router.get("/workflows/{workflow_id}/executions/{execution_id}", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def get_execution(workflow_id: str, execution_id: str):
