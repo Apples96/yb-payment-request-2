@@ -196,3 +196,57 @@ class WorkflowDescriptionEnhanceResponse(BaseModel):
     questions: List[str] = Field(default_factory=list, description="Questions to clarify workflow requirements")
     warnings: List[str] = Field(default_factory=list, description="Warnings about tool limitations or requirements")
 
+class TestExample(BaseModel):
+    """
+    Model representing a single test example for automated workflow testing.
+    
+    Contains the input query, optional document attachments, validation criteria,
+    and expected output examples for testing workflow correctness.
+    """
+    id: str = Field(..., description="Unique identifier for the test example")
+    query: str = Field(..., description="Test query input")
+    attached_file_ids: Optional[List[int]] = Field(None, description="List of file IDs attached to this test")
+    validation_criteria: str = Field(..., description="Criteria for determining if test passes")
+    expected_output: Optional[str] = Field(None, description="Optional expected output example")
+    description: Optional[str] = Field(None, description="Optional description of what this test validates")
+
+class AutomatedTestRequest(BaseModel):
+    """
+    Request model for running automated workflow testing and improvement.
+    
+    Contains the workflow code, test examples, and iteration control settings
+    for automatically testing and improving workflow code.
+    """
+    workflow_code: str = Field(..., description="Workflow code to test and improve")
+    test_examples: List[TestExample] = Field(..., description="List of test examples to run")
+    iteration_mode: str = Field(..., description="Either 'until_passed' or 'fixed_iterations'")
+    max_iterations: Optional[int] = Field(10, description="Maximum iterations (for both modes)")
+    fixed_iterations: Optional[int] = Field(None, description="Number of iterations for fixed mode")
+
+class TestResult(BaseModel):
+    """
+    Model representing the result of running a single test example.
+    
+    Contains the execution output, pass/fail status, and evaluation feedback.
+    """
+    test_id: str = Field(..., description="ID of the test example")
+    passed: bool = Field(..., description="Whether the test passed validation")
+    output: Optional[str] = Field(None, description="Actual workflow execution output")
+    evaluation_feedback: str = Field(..., description="AI evaluation feedback")
+    execution_time: Optional[float] = Field(None, description="Test execution time in seconds")
+    error: Optional[str] = Field(None, description="Error message if test execution failed")
+
+class AutomatedTestResponse(BaseModel):
+    """
+    Response model for automated workflow testing results.
+    
+    Contains the final improved workflow code, test results, and iteration summary.
+    """
+    improved_workflow_code: str = Field(..., description="Final improved workflow code")
+    total_iterations: int = Field(..., description="Number of iterations performed")
+    all_tests_passed: bool = Field(..., description="Whether all tests passed in final iteration")
+    test_results: List[TestResult] = Field(..., description="Results from final iteration")
+    iteration_history: List[Dict[str, Any]] = Field(default_factory=list, description="History of all iterations")
+    stopped_reason: str = Field(..., description="Reason testing stopped (max_iterations, all_passed, user_intervention)")
+    problematic_tests: Optional[List[str]] = Field(None, description="IDs of tests that consistently failed")
+

@@ -343,6 +343,9 @@ Architecture:
                 <strong>💡 Tip:</strong> The generated code will appear here automatically after creating a workflow. You can edit it before testing if needed.
             </div>
             <textarea id="workflowCode" placeholder="Generated workflow code will appear here after creating a workflow..." style="height: 200px; font-family: 'Courier New', monospace; font-size: 12px; color: #999;"></textarea>
+            <div id="feedbackIterationCounter" style="font-size: 11px; color: #666; margin-top: 5px; display: none;">
+                📝 <span id="iterationCount">0</span> feedback improvement(s) applied
+            </div>
         </div>
 
         <p>Enter your query and optionally attach documents:</p>
@@ -366,6 +369,140 @@ Architecture:
         
         <button onclick="executeWorkflowWithQuery()" id="testButton" disabled>Test Workflow</button>
         <div id="testResult" style="margin-top: 15px;"></div>
+        
+        <!-- Feedback Section -->
+        <div id="feedbackSection" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; display: none;">
+            <h3 style="color: #333; font-size: 18px; margin-bottom: 15px;">🔧 Improve Generated Code</h3>
+            <p style="color: #666; margin-bottom: 15px;">Provide feedback to modify the generated workflow code while maintaining all original requirements:</p>
+            
+            <div style="margin: 15px 0;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">💬 Your Feedback:</label>
+                <textarea id="feedbackInput" 
+                    placeholder="Example: 'The output format should include the document source names' or 'Add error handling for missing fields' or 'Sort results by date in descending order'" 
+                    style="height: 100px; width: 100%; resize: vertical;">
+                </textarea>
+                <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 13px; color: #e65100;">
+                    <strong>💡 Note:</strong> Your feedback will be used to modify the code while preserving all original workflow requirements and code generation standards.
+                </div>
+            </div>
+            
+            <button onclick="applyFeedbackToCode()" id="feedbackButton" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                Apply Feedback to Code
+            </button>
+            <div id="feedbackResult" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Step 3B: Test and Update Workflow Automatically -->
+    <div class="container">
+        <h2>3B. Test and update workflow automatically</h2>
+        
+        <!-- Generated Code Section -->
+        <div style="margin: 15px 0;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">💻 Generated Workflow Code:</label>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px; color: #666;">
+                <strong>💡 Tip:</strong> The generated code will appear here automatically after creating a workflow. You can edit it before testing if needed.
+            </div>
+            <textarea id="workflowCodeAuto" placeholder="Generated workflow code will appear here after creating a workflow..." style="height: 200px; font-family: 'Courier New', monospace; font-size: 12px; color: #999;"></textarea>
+        </div>
+
+        <!-- Test Examples Section -->
+        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h3 style="color: #333; margin-top: 0;">🧪 Test Examples</h3>
+            
+            <!-- Current Test Example Form -->
+            <div id="currentTestForm" style="background: white; padding: 15px; border-radius: 4px; margin: 10px 0;">
+                <h4 style="margin-top: 0; color: #555;">Add Test Example</h4>
+                
+                <!-- Query Input -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Query:</label>
+                    <input type="text" id="testExampleQuery" placeholder="What is LightOn's main technology platform?" style="width: 100%;" />
+                </div>
+                
+                <!-- Document Upload Section -->
+                <div style="margin: 15px 0;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">📎 Attach Documents (Optional):</label>
+                    <div class="file-upload-area" id="autoTestUploadArea" ondrop="handleAutoTestDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                        <p>📎 Drag and drop files here or <button onclick="document.getElementById('autoTestFileInput').click()">browse files</button></p>
+                        <input type="file" id="autoTestFileInput" multiple style="display: none;" onchange="handleAutoTestFileSelect(event)">
+                        <p style="font-size: 12px; color: #666;">Upload documents to analyze with your query</p>
+                        <p style="font-size: 11px; color: #888; margin-top: 5px;">Note: In this demo, attached documents will be automatically deleted after workflow execution.</p>
+                    </div>
+                    <div id="autoTestUploadStatus"></div>
+                    <ul class="file-list" id="autoTestFilesList"></ul>
+                </div>
+                
+                <!-- Test Validation Criteria -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Test Validation Criteria:</label>
+                    <textarea id="testValidationCriteria" placeholder="Example: 'all 22 controls tested in the workflow should be VALID' or 'the output should have the same format and answers as the example below: [example]'" style="height: 80px; width: 100%;"></textarea>
+                    <div style="background: #fff3e0; padding: 8px; border-radius: 4px; margin-top: 5px; font-size: 12px; color: #e65100;">
+                        <strong>💡 Tip:</strong> Be specific about what makes the test pass. Examples: format requirements, specific content, validation rules, etc.
+                    </div>
+                </div>
+                
+                <!-- Expected Output (Optional) -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Expected Output (Optional):</label>
+                    <textarea id="testExpectedOutput" placeholder="Paste expected output example here (optional - used for comparison)" style="height: 60px; width: 100%;"></textarea>
+                </div>
+                
+                <!-- Description (Optional) -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Test Description (Optional):</label>
+                    <input type="text" id="testDescription" placeholder="Brief description of what this test validates" style="width: 100%;" />
+                </div>
+                
+                <button onclick="addTestExample()" style="background: #28a745; color: white;">Add Test Example</button>
+            </div>
+            
+            <!-- Test Examples List -->
+            <div id="testExamplesList" style="margin-top: 20px;">
+                <h4 style="color: #555;">📋 Added Test Examples</h4>
+                <div id="testExamplesDisplay" style="background: white; padding: 15px; border-radius: 4px; min-height: 60px;">
+                    <p style="color: #666; font-style: italic; margin: 0;">No test examples added yet. Add your first test example above.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Iteration Control Section -->
+        <div style="margin: 20px 0; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+            <h3 style="color: #333; margin-top: 0;">⚙️ Iteration Control</h3>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Testing Mode:</label>
+                <div style="margin-left: 10px;">
+                    <label style="display: block; margin-bottom: 8px;">
+                        <input type="radio" name="iterationMode" value="until_passed" checked onchange="updateIterationMode()"> 
+                        Iterate until AI deems all tests are passed (max 10 iterations)
+                    </label>
+                    <label style="display: block;">
+                        <input type="radio" name="iterationMode" value="fixed_iterations" onchange="updateIterationMode()"> 
+                        Fixed number of iterations: <input type="number" id="fixedIterations" value="3" min="1" max="10" style="width: 60px; margin-left: 5px;" disabled>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Launch Button -->
+        <div style="text-align: center; margin: 20px 0;">
+            <button onclick="launchAutomatedTesting()" id="launchTestingButton" disabled style="background: #ff6b35; color: white; font-size: 16px; padding: 15px 30px; border-radius: 8px; cursor: pointer;">
+                🚀 Launch Workflow Tests and Updates
+            </button>
+            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                <span id="testButtonStatus">Add at least one test example to start testing</span>
+            </div>
+        </div>
+        
+        <!-- Results Display -->
+        <div id="automatedTestResults" style="margin-top: 20px; display: none;">
+            <h3 style="color: #333;">📊 Automated Testing Results</h3>
+            <div id="testingProgress" style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0;">
+                <div id="progressContent"></div>
+            </div>
+            <div id="finalResults" style="margin-top: 15px;"></div>
+        </div>
     </div>
 
     <!-- Step 4: Update Workflow -->
@@ -617,6 +754,48 @@ if __name__ == "__main__":
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
+        let feedbackIterationCount = 0;  // Counter for feedback improvements
+
+        /**
+         * Update the test button state based on available workflow code or stored workflow
+         */
+        function updateTestButtonState() {
+            const codeTextarea = document.getElementById('workflowCode');
+            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            const hasCode = codeTextarea && codeTextarea.value.trim() && codeTextarea.value.trim() !== codeExampleText;
+            const hasWorkflowId = currentWorkflowId !== null;
+            
+            const testButton = document.getElementById('testButton');
+            if (testButton) {
+                testButton.disabled = !(hasCode || hasWorkflowId);
+            }
+        }
+        
+        /**
+         * Update the feedback iteration counter display
+         */
+        function updateFeedbackCounter() {
+            const counterElement = document.getElementById('iterationCount');
+            const counterContainer = document.getElementById('feedbackIterationCounter');
+            
+            if (counterElement && counterContainer) {
+                counterElement.textContent = feedbackIterationCount;
+                if (feedbackIterationCount > 0) {
+                    counterContainer.style.display = 'block';
+                } else {
+                    counterContainer.style.display = 'none';
+                }
+            }
+        }
+        
+        /**
+         * Reset feedback counter when new workflow is created or code is manually changed
+         */
+        function resetFeedbackCounter() {
+            feedbackIterationCount = 0;
+            updateFeedbackCounter();
+        }
 
         // =============================================================
         // FILE UPLOAD AND MANAGEMENT FUNCTIONS
@@ -932,7 +1111,16 @@ if __name__ == "__main__":
                 }
                 
                 const response = await fetch(url, options);
-                const data = await response.json();
+                
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonError) {
+                    // If JSON parsing fails, try to get text content for debugging
+                    const textContent = await response.text();
+                    addLog(`⚠️ JSON parse error: ${jsonError.message}. Response: ${textContent.substring(0, 200)}...`, 'error');
+                    throw new Error(`Invalid JSON response: ${jsonError.message}`);
+                }
                 
                 // Log response details
                 if (response.ok) {
@@ -1375,14 +1563,27 @@ if __name__ == "__main__":
 
                 if (response.ok) {
                     currentWorkflowId = data.id;
-                    document.getElementById('testButton').disabled = false;
+                    
+                    // Reset feedback counter for new workflow
+                    resetFeedbackCounter();
                     
                     // Populate the code textarea with generated code
                     const codeTextarea = document.getElementById('workflowCode');
                     if (data.generated_code) {
                         codeTextarea.value = data.generated_code;
                         codeTextarea.style.color = '#333';
+                        
+                        // Sync to automated testing section
+                        const autoCodeTextarea = document.getElementById('workflowCodeAuto');
+                        if (autoCodeTextarea) {
+                            autoCodeTextarea.value = data.generated_code;
+                            autoCodeTextarea.style.color = '#333';
+                            updateLaunchButtonState();
+                        }
                     }
+                    
+                    // Update button state
+                    updateTestButtonState();
                     
                     const resultMessage = `✅ Workflow created successfully!\n\nID: ${data.id}\nName: ${data.name || 'Unnamed'}\nStatus: ${data.status}\n\nGenerated Code:\n${data.generated_code || 'No code generated'}`;
                     
@@ -1599,6 +1800,9 @@ if __name__ == "__main__":
                         
                         showResult(resultDiv, resultMessage, 'success');
                         
+                        // Show feedback section after successful execution
+                        document.getElementById('feedbackSection').style.display = 'block';
+                        
                         // Add tip about Paradigm tool
                         const tipDiv = document.createElement('div');
                         tipDiv.style.cssText = 'background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #2196f3; font-size: 12px;';
@@ -1756,6 +1960,7 @@ if __name__ == "__main__":
                     this.value = '';
                     this.style.color = '#333';
                 }
+                updateTestButtonState();
             });
             
             // Handle blur - restore example text if field is empty
@@ -1764,17 +1969,633 @@ if __name__ == "__main__":
                     this.value = codeExampleText;
                     this.style.color = '#999';
                 }
+                updateTestButtonState();
             });
             
-            // Handle input - change color when user types
+            // Handle input - change color when user types and enable test button
             codeTextarea.addEventListener('input', function() {
                 if (this.value !== codeExampleText) {
                     this.style.color = '#333';
                 }
+                updateTestButtonState();
             });
             
             document.getElementById('testButton').textContent = 'Test Workflow';
+            
+            // Initialize automated testing features
+            syncWorkflowCode();
+            
+            // Set up example text behavior for automated testing workflow code textarea
+            const autoCodeTextarea = document.getElementById('workflowCodeAuto');
+            const autoCodeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            // Set initial example text
+            autoCodeTextarea.value = autoCodeExampleText;
+            autoCodeTextarea.style.color = '#999';
+            
+            // Handle focus - clear example text when user starts typing
+            autoCodeTextarea.addEventListener('focus', function() {
+                if (this.value === autoCodeExampleText) {
+                    this.value = '';
+                    this.style.color = '#333';
+                }
+            });
+            
+            // Handle blur - restore example text if field is empty
+            autoCodeTextarea.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.value = autoCodeExampleText;
+                    this.style.color = '#999';
+                }
+            });
+            
+            // Handle input - change color when user types
+            autoCodeTextarea.addEventListener('input', function() {
+                if (this.value !== autoCodeExampleText) {
+                    this.style.color = '#333';
+                }
+                updateLaunchButtonState();
+            });
+            
+            // Initialize launch button state
+            updateLaunchButtonState();
         };
+
+        /**
+         * Apply user feedback to modify the generated workflow code.
+         * Handles both stored workflows and custom pasted code.
+         */
+        async function applyFeedbackToCode() {
+            const feedback = document.getElementById('feedbackInput').value.trim();
+            const resultDiv = document.getElementById('feedbackResult');
+            const currentCode = document.getElementById('workflowCode').value.trim();
+            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            if (!feedback) {
+                alert('Please provide feedback to improve the code');
+                return;
+            }
+            
+            if (!currentCode || currentCode === codeExampleText) {
+                alert('No code to improve. Please create a workflow first or paste code into the code editor.');
+                return;
+            }
+            
+            try {
+                showResult(resultDiv, 'Applying your feedback to improve the workflow code...', 'loading');
+                addLog('🔧 Applying user feedback to workflow code', 'info');
+                addLog(`💬 User feedback: ${feedback}`, 'query');
+                
+                let response, data;
+                
+                // If we have a stored workflow ID, use the feedback endpoint
+                if (currentWorkflowId) {
+                    const result = await loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/apply-feedback`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ feedback: feedback })
+                    }, 'APPLY FEEDBACK TO STORED WORKFLOW');
+                    response = result.response;
+                    data = result.data;
+                } else {
+                    // If no workflow ID but we have custom code, create a new workflow with feedback
+                    const enhancedDescription = `
+CURRENT CODE TO IMPROVE:
+${currentCode}
+
+USER FEEDBACK FOR IMPROVEMENT:
+${feedback}
+
+INSTRUCTIONS: Modify the provided code based on the user feedback while:
+1. Maintaining all original functionality
+2. Following all code generation standards and best practices
+3. Preserving the self-contained nature of the code
+4. Keeping all imports and API client implementations
+5. Maintaining the async execute_workflow function signature
+6. Following structured output patterns when extracting information
+7. Including visual search fallback mechanisms where applicable
+
+Generate the improved workflow code that incorporates the user feedback.`;
+
+                    const result = await loggedFetch(`${API_BASE}/workflows`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            description: enhancedDescription,
+                            name: `Improved Custom Code`,
+                            context: { 
+                                feedback_iteration: true,
+                                user_feedback: feedback,
+                                custom_code_improvement: true
+                            }
+                        })
+                    }, 'APPLY FEEDBACK TO CUSTOM CODE');
+                    response = result.response;
+                    data = result.data;
+                }
+                
+                if (response.ok) {
+                    // Update the code in the textarea
+                    document.getElementById('workflowCode').value = data.generated_code;
+                    
+                    // Store updated workflow info
+                    currentWorkflowId = data.id;
+                    currentWorkflowName = data.name;
+                    
+                    // Update feedback counter
+                    feedbackIterationCount++;
+                    updateFeedbackCounter();
+                    
+                    // Update button state
+                    updateTestButtonState();
+                    
+                    showResult(resultDiv, `✅ Code improved successfully!\n\nApplied feedback: "${feedback}"\n\nWorkflow ID: ${data.id}\nThe updated code is now in the code editor above. You can test it or provide additional feedback.`, 'success');
+                    
+                    // Clear feedback input for next iteration
+                    document.getElementById('feedbackInput').value = '';
+                    
+                    addLog(`✅ Code improved: ${data.id}`, 'response');
+                    addLog(`💻 Updated code length: ${data.generated_code.length} characters`, 'response');
+                    
+                } else {
+                    showResult(resultDiv, `❌ Error: ${data.detail || 'Failed to apply feedback'}`, 'error');
+                    addLog(`❌ Feedback application failed: ${data.detail}`, 'error');
+                }
+                
+            } catch (error) {
+                showResult(resultDiv, `❌ Network Error: ${error.message}`, 'error');
+                addLog(`❌ Feedback application network error: ${error.message}`, 'error');
+            }
+        }
+
+        // =============================================================
+        // AUTOMATED TESTING FUNCTIONS (SECTION 3B)
+        // =============================================================
+        
+        // Global variables for automated testing
+        let testExamples = [];
+        let autoTestAttachedFiles = [];
+        
+        /**
+         * Synchronize workflow code between section 3 and section 3B
+         */
+        function syncWorkflowCode() {
+            const mainCodeTextarea = document.getElementById('workflowCode');
+            const autoCodeTextarea = document.getElementById('workflowCodeAuto');
+            
+            if (mainCodeTextarea && autoCodeTextarea) {
+                // Sync from main to auto when main changes
+                mainCodeTextarea.addEventListener('input', function() {
+                    if (this.value && this.value !== "Generated workflow code will appear here after creating a workflow...") {
+                        autoCodeTextarea.value = this.value;
+                        autoCodeTextarea.style.color = '#333';
+                    }
+                });
+                
+                // Sync from auto to main when auto changes  
+                autoCodeTextarea.addEventListener('input', function() {
+                    if (this.value && this.value !== "Generated workflow code will appear here after creating a workflow...") {
+                        mainCodeTextarea.value = this.value;
+                        mainCodeTextarea.style.color = '#333';
+                        updateTestButtonState(); // Update section 3 test button
+                    }
+                });
+                
+                // Initial sync if main has content
+                if (mainCodeTextarea.value && mainCodeTextarea.value !== "Generated workflow code will appear here after creating a workflow...") {
+                    autoCodeTextarea.value = mainCodeTextarea.value;
+                    autoCodeTextarea.style.color = '#333';
+                }
+            }
+        }
+        
+        /**
+         * Handle drag-and-drop file uploads for automated testing
+         */
+        function handleAutoTestDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const uploadArea = document.getElementById('autoTestUploadArea');
+            uploadArea.classList.remove('dragover');
+            
+            const files = Array.from(event.dataTransfer.files);
+            uploadAutoTestFiles(files);
+        }
+
+        /**
+         * Handle file selection for automated testing
+         */
+        function handleAutoTestFileSelect(event) {
+            const files = Array.from(event.target.files);
+            uploadAutoTestFiles(files);
+        }
+
+        /**
+         * Upload files for automated testing
+         */
+        async function uploadAutoTestFiles(files) {
+            const statusDiv = document.getElementById('autoTestUploadStatus');
+            const filesList = document.getElementById('autoTestFilesList');
+            
+            for (const file of files) {
+                try {
+                    statusDiv.innerHTML = `<div class="result loading">Uploading ${file.name}...</div>`;
+                    addLog(`📤 Uploading auto-test attachment: ${file.name} (${file.size} bytes)`, 'info');
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('collection_type', 'private');
+                    
+                    const { response, data } = await loggedFetch(`${API_BASE}/files/upload`, {
+                        method: 'POST',
+                        body: formData
+                    }, `UPLOAD AUTO-TEST FILE: ${file.name}`);
+                    
+                    if (response.ok) {
+                        // Add to auto test attached files list
+                        autoTestAttachedFiles.push(data);
+                        
+                        // Update UI
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <div class="file-info">
+                                <strong>${data.filename}</strong> (ID: ${data.id})
+                                <br><small>${data.bytes} bytes • Status: ${data.status}</small>
+                            </div>
+                            <div class="file-actions">
+                                <button onclick="removeAutoTestFile(${data.id})" class="remove-file" title="Remove attachment">🗑️</button>
+                            </div>
+                        `;
+                        filesList.appendChild(listItem);
+                        
+                        statusDiv.innerHTML = `<div class="result success">✅ ${file.name} attached!</div>`;
+                        addLog(`✅ Auto-test file uploaded successfully: ID ${data.id}`, 'response');
+                        
+                    } else {
+                        statusDiv.innerHTML = `<div class="result error">❌ Failed to upload ${file.name}</div>`;
+                        addLog(`❌ Auto-test upload failed: ${data.detail || 'Unknown error'}`, 'error');
+                    }
+                    
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="result error">❌ Network error uploading ${file.name}</div>`;
+                    addLog(`❌ Auto-test upload network error: ${error.message}`, 'error');
+                }
+            }
+            
+            // Clear file input
+            document.getElementById('autoTestFileInput').value = '';
+        }
+
+        /**
+         * Remove a file attachment from automated testing
+         */
+        async function removeAutoTestFile(fileId) {
+            if (!confirm('Are you sure you want to remove this attachment?')) return;
+            
+            try {
+                addLog(`🗑️ Removing auto-test attachment ID: ${fileId}`, 'info');
+                
+                const { response, data } = await loggedFetch(`${API_BASE}/files/${fileId}`, {
+                    method: 'DELETE'
+                }, `DELETE AUTO-TEST FILE: ${fileId}`);
+                
+                if (response.ok) {
+                    // Remove from auto test attached files array
+                    autoTestAttachedFiles = autoTestAttachedFiles.filter(file => file.id !== fileId);
+                    
+                    // Remove from UI
+                    const filesList = document.getElementById('autoTestFilesList');
+                    const items = filesList.querySelectorAll('li');
+                    items.forEach(item => {
+                        if (item.innerHTML.includes(`ID: ${fileId}`)) {
+                            item.remove();
+                        }
+                    });
+                    
+                    addLog(`✅ Auto-test attachment removed: ID ${fileId}`, 'response');
+                    
+                } else {
+                    addLog(`❌ Remove auto-test attachment error: ${data.detail}`, 'error');
+                }
+                
+            } catch (error) {
+                addLog(`❌ Remove auto-test attachment network error: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Add a test example to the list
+         */
+        function addTestExample() {
+            const query = document.getElementById('testExampleQuery').value.trim();
+            const criteria = document.getElementById('testValidationCriteria').value.trim();
+            const expectedOutput = document.getElementById('testExpectedOutput').value.trim();
+            const description = document.getElementById('testDescription').value.trim();
+            
+            if (!query) {
+                alert('Please enter a query for the test example');
+                return;
+            }
+            
+            if (!criteria) {
+                alert('Please enter validation criteria for the test example');
+                return;
+            }
+            
+            // Create test example object
+            const testExample = {
+                id: `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                query: query,
+                attached_file_ids: autoTestAttachedFiles.map(f => f.id),
+                validation_criteria: criteria,
+                expected_output: expectedOutput || null,
+                description: description || null
+            };
+            
+            testExamples.push(testExample);
+            
+            // Clear form
+            document.getElementById('testExampleQuery').value = '';
+            document.getElementById('testValidationCriteria').value = '';
+            document.getElementById('testExpectedOutput').value = '';
+            document.getElementById('testDescription').value = '';
+            
+            // Clear attached files
+            autoTestAttachedFiles = [];
+            document.getElementById('autoTestFilesList').innerHTML = '';
+            document.getElementById('autoTestUploadStatus').innerHTML = '';
+            
+            // Update display
+            updateTestExamplesDisplay();
+            updateLaunchButtonState();
+            
+            addLog(`✅ Test example added: ${testExample.id}`, 'info');
+        }
+
+        /**
+         * Update the test examples display
+         */
+        function updateTestExamplesDisplay() {
+            const display = document.getElementById('testExamplesDisplay');
+            
+            if (testExamples.length === 0) {
+                display.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">No test examples added yet. Add your first test example above.</p>';
+                return;
+            }
+            
+            let html = '';
+            testExamples.forEach((example, index) => {
+                html += `
+                    <div style="border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; padding: 15px; background: #fafafa;">
+                        <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 10px;">
+                            <h5 style="margin: 0; color: #333;">Test ${index + 1}: ${example.description || example.query.substring(0, 50) + (example.query.length > 50 ? '...' : '')}</h5>
+                            <button onclick="removeTestExample('${example.id}')" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer;" title="Remove test">🗑️ Remove</button>
+                        </div>
+                        <div style="font-size: 13px; color: #555;">
+                            <p><strong>Query:</strong> ${example.query}</p>
+                            <p><strong>Validation Criteria:</strong> ${example.validation_criteria}</p>
+                            ${example.expected_output ? `<p><strong>Expected Output:</strong> ${example.expected_output.substring(0, 100) + (example.expected_output.length > 100 ? '...' : '')}</p>` : ''}
+                            ${example.attached_file_ids.length > 0 ? `<p><strong>Attached Files:</strong> ${example.attached_file_ids.length} file(s)</p>` : ''}
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button onclick="editTestExample('${example.id}')" style="background: #ffc107; color: #212529; border: none; padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer;">✏️ Edit</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            display.innerHTML = html;
+        }
+
+        /**
+         * Remove a test example
+         */
+        function removeTestExample(testId) {
+            if (!confirm('Are you sure you want to remove this test example?')) return;
+            
+            testExamples = testExamples.filter(example => example.id !== testId);
+            updateTestExamplesDisplay();
+            updateLaunchButtonState();
+            
+            addLog(`🗑️ Test example removed: ${testId}`, 'info');
+        }
+
+        /**
+         * Edit a test example (simplified - populate form)
+         */
+        function editTestExample(testId) {
+            const example = testExamples.find(e => e.id === testId);
+            if (!example) return;
+            
+            // Populate form with existing values
+            document.getElementById('testExampleQuery').value = example.query;
+            document.getElementById('testValidationCriteria').value = example.validation_criteria;
+            document.getElementById('testExpectedOutput').value = example.expected_output || '';
+            document.getElementById('testDescription').value = example.description || '';
+            
+            // Remove the original example (user will add updated version)
+            removeTestExample(testId);
+            
+            // Scroll to form
+            document.getElementById('currentTestForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Update iteration mode controls
+         */
+        function updateIterationMode() {
+            const fixedIterationsInput = document.getElementById('fixedIterations');
+            const selectedMode = document.querySelector('input[name="iterationMode"]:checked').value;
+            
+            if (selectedMode === 'fixed_iterations') {
+                fixedIterationsInput.disabled = false;
+                fixedIterationsInput.style.backgroundColor = 'white';
+            } else {
+                fixedIterationsInput.disabled = true;
+                fixedIterationsInput.style.backgroundColor = '#f0f0f0';
+            }
+        }
+
+        /**
+         * Update launch button state
+         */
+        function updateLaunchButtonState() {
+            const launchButton = document.getElementById('launchTestingButton');
+            const statusSpan = document.getElementById('testButtonStatus');
+            const codeTextarea = document.getElementById('workflowCodeAuto');
+            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            const hasCode = codeTextarea && codeTextarea.value.trim() && codeTextarea.value.trim() !== codeExampleText;
+            const hasTests = testExamples.length > 0;
+            
+            if (hasCode && hasTests) {
+                launchButton.disabled = false;
+                launchButton.style.backgroundColor = '#ff6b35';
+                launchButton.style.cursor = 'pointer';
+                statusSpan.textContent = `Ready to test ${testExamples.length} example(s) with automated improvements`;
+            } else if (!hasCode) {
+                launchButton.disabled = true;
+                launchButton.style.backgroundColor = '#ccc';
+                launchButton.style.cursor = 'not-allowed';
+                statusSpan.textContent = 'Create a workflow first (section 2) to enable testing';
+            } else if (!hasTests) {
+                launchButton.disabled = true;
+                launchButton.style.backgroundColor = '#ccc';
+                launchButton.style.cursor = 'not-allowed';
+                statusSpan.textContent = 'Add at least one test example to start testing';
+            }
+        }
+
+        /**
+         * Launch automated workflow testing
+         */
+        async function launchAutomatedTesting() {
+            const codeTextarea = document.getElementById('workflowCodeAuto');
+            const resultsDiv = document.getElementById('automatedTestResults');
+            const progressDiv = document.getElementById('progressContent');
+            const finalResultsDiv = document.getElementById('finalResults');
+            
+            if (testExamples.length === 0) {
+                alert('Please add at least one test example');
+                return;
+            }
+            
+            if (!codeTextarea.value.trim() || codeTextarea.value.trim() === "Generated workflow code will appear here after creating a workflow...") {
+                alert('No workflow code to test. Please create a workflow first.');
+                return;
+            }
+            
+            try {
+                // Show results section and clear previous results
+                resultsDiv.style.display = 'block';
+                progressDiv.innerHTML = '<div class="result loading">🚀 Starting automated testing...</div>';
+                finalResultsDiv.innerHTML = '';
+                
+                // Get iteration settings
+                const iterationMode = document.querySelector('input[name="iterationMode"]:checked').value;
+                const fixedIterations = parseInt(document.getElementById('fixedIterations').value) || 3;
+                
+                // Prepare request
+                const request = {
+                    workflow_code: codeTextarea.value,
+                    test_examples: testExamples,
+                    iteration_mode: iterationMode,
+                    max_iterations: 10,
+                    fixed_iterations: iterationMode === 'fixed_iterations' ? fixedIterations : null
+                };
+                
+                addLog(`🧪 Starting automated testing with ${testExamples.length} test examples`, 'workflow-step');
+                addLog(`⚙️ Mode: ${iterationMode}, Max iterations: ${iterationMode === 'fixed_iterations' ? fixedIterations : 10}`, 'info');
+                
+                progressDiv.innerHTML = '<div class="result loading">🔄 Running automated tests and improvements... (this may take several minutes)</div>';
+                
+                // Call automated testing API
+                const { response, data } = await loggedFetch(`${API_BASE}/workflows/automated-test`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request)
+                }, 'AUTOMATED WORKFLOW TESTING');
+                
+                if (response.ok) {
+                    addLog(`✅ Automated testing completed: ${data.stopped_reason}, ${data.total_iterations} iterations`, 'response');
+                    
+                    // Update workflow code with improved version
+                    codeTextarea.value = data.improved_workflow_code;
+                    codeTextarea.style.color = '#333';
+                    
+                    // Sync back to main section
+                    const mainCodeTextarea = document.getElementById('workflowCode');
+                    if (mainCodeTextarea) {
+                        mainCodeTextarea.value = data.improved_workflow_code;
+                        mainCodeTextarea.style.color = '#333';
+                        updateTestButtonState();
+                    }
+                    
+                    // Display results
+                    let resultHtml = `
+                        <div class="result success">
+                            <h3 style="margin-top: 0;">✅ Automated Testing Completed!</h3>
+                            <div style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                                <p><strong>📊 Summary:</strong></p>
+                                <ul>
+                                    <li>Total iterations: ${data.total_iterations}</li>
+                                    <li>All tests passed: ${data.all_tests_passed ? '✅ Yes' : '❌ No'}</li>
+                                    <li>Stopped reason: ${data.stopped_reason}</li>
+                                    ${data.problematic_tests ? `<li>Problematic tests: ${data.problematic_tests.length}</li>` : ''}
+                                </ul>
+                            </div>
+                        `;
+                    
+                    // Show final test results
+                    if (data.test_results.length > 0) {
+                        resultHtml += `
+                            <div style="margin: 15px 0;">
+                                <h4>🔍 Final Test Results:</h4>
+                        `;
+                        
+                        data.test_results.forEach((result, index) => {
+                            const testExample = testExamples.find(t => t.id === result.test_id);
+                            resultHtml += `
+                                <div style="border: 1px solid ${result.passed ? '#28a745' : '#dc3545'}; border-radius: 4px; margin: 10px 0; padding: 10px; background: ${result.passed ? '#d4edda' : '#f8d7da'};">
+                                    <h5 style="margin: 0 0 8px 0; color: ${result.passed ? '#155724' : '#721c24'};">
+                                        ${result.passed ? '✅' : '❌'} Test ${index + 1}: ${testExample?.description || testExample?.query?.substring(0, 50) || result.test_id}
+                                    </h5>
+                                    <p style="margin: 5px 0; font-size: 13px;"><strong>AI Feedback:</strong> ${result.evaluation_feedback}</p>
+                                    ${result.execution_time ? `<p style="margin: 5px 0; font-size: 12px; color: #666;">Execution time: ${result.execution_time.toFixed(2)}s</p>` : ''}
+                                    ${result.error ? `<p style="margin: 5px 0; font-size: 13px; color: #dc3545;"><strong>Error:</strong> ${result.error}</p>` : ''}
+                                </div>
+                            `;
+                        });
+                        
+                        resultHtml += `</div>`;
+                    }
+                    
+                    // Show problematic tests warning
+                    if (data.problematic_tests && data.problematic_tests.length > 0) {
+                        resultHtml += `
+                            <div style="margin: 15px 0; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                <h4 style="margin-top: 0; color: #856404;">⚠️ Problematic Tests Detected</h4>
+                                <p style="color: #856404;">The following tests failed repeatedly and may need manual review:</p>
+                                <ul style="color: #856404;">
+                                    ${data.problematic_tests.map(testId => {
+                                        const test = testExamples.find(t => t.id === testId);
+                                        return `<li>${test?.description || test?.query?.substring(0, 50) || testId}</li>`;
+                                    }).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    }
+                    
+                    // Max iterations warning
+                    if (data.stopped_reason === 'max_iterations' && !data.all_tests_passed) {
+                        resultHtml += `
+                            <div style="margin: 15px 0; padding: 15px; background: #f8d7da; border-left: 4px solid #dc3545; border-radius: 4px;">
+                                <h4 style="margin-top: 0; color: #721c24;">🛑 Maximum Iterations Reached</h4>
+                                <p style="color: #721c24;">Testing stopped after ${data.total_iterations} iterations, but not all tests passed. You may need to manually review the validation criteria or workflow logic.</p>
+                            </div>
+                        `;
+                    }
+                    
+                    resultHtml += `</div>`;
+                    finalResultsDiv.innerHTML = resultHtml;
+                    progressDiv.innerHTML = '';
+                    
+                    // Scroll to results
+                    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+                    
+                } else {
+                    addLog(`❌ Automated testing failed: ${data.detail}`, 'error');
+                    finalResultsDiv.innerHTML = `<div class="result error">❌ Automated testing failed: ${data.detail || 'Unknown error'}</div>`;
+                    progressDiv.innerHTML = '';
+                }
+                
+            } catch (error) {
+                addLog(`❌ Automated testing network error: ${error.message}`, 'error');
+                finalResultsDiv.innerHTML = `<div class="result error">❌ Network error: ${error.message}</div>`;
+                progressDiv.innerHTML = '';
+            }
+        }
     </script>
 </body>
 </html>

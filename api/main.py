@@ -53,6 +53,10 @@ from .models import (
     WorkflowWithFilesRequest,
     WorkflowDescriptionEnhanceRequest,
     WorkflowDescriptionEnhanceResponse,
+    TestExample,
+    AutomatedTestRequest,
+    AutomatedTestResponse,
+    TestResult,
 )
 from .workflow.generator import workflow_generator
 from .workflow.executor import workflow_executor
@@ -62,6 +66,9 @@ from .api_clients import paradigm_client  # Updated import
 # Configure logging based on debug settings
 logging.basicConfig(level=logging.INFO if settings.debug else logging.WARNING)
 logger = logging.getLogger(__name__)
+
+# In-memory storage for test examples (session-only)
+session_test_examples: Dict[str, List[TestExample]] = {}
 
 # API key validation helpers
 def validate_anthropic_api_key():
@@ -388,6 +395,415 @@ async def execute_workflow(workflow_id: str, request: WorkflowExecuteRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to execute workflow: {str(e)}"
+        )
+
+@api_router.post("/workflows/{workflow_id}/apply-feedback", response_model=WorkflowResponse, tags=["Workflows"])
+async def apply_feedback_to_workflow(workflow_id: str, feedback: str = Body(..., embed=True)):
+    """
+    Apply user feedback to modify an existing workflow's generated code.
+    
+    Takes user feedback and regenerates the workflow code while maintaining
+    all original requirements and following code generation best practices.
+    
+    Args:
+        workflow_id: ID of the workflow to improve
+        feedback: User feedback describing desired changes
+        
+    Returns:
+        WorkflowResponse: Updated workflow with improved code
+        
+    Raises:
+        HTTPException: 404 if workflow not found, 500 if improvement fails
+    """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
+    try:
+        # Get the original workflow
+        original_workflow = workflow_executor.get_workflow(workflow_id)
+        if not original_workflow:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Workflow {workflow_id} not found"
+            )
+        
+        logger.info(f"Applying feedback to workflow {workflow_id}: {feedback[:100]}...")
+        
+        # Create enhanced description with feedback for regeneration
+        enhanced_description = f"""
+ORIGINAL WORKFLOW: {original_workflow.description}
+
+CURRENT GENERATED CODE:
+{original_workflow.generated_code}
+
+USER FEEDBACK FOR IMPROVEMENT:
+{feedback}
+
+INSTRUCTIONS: Modify the workflow code based on the user feedback while:
+1. Maintaining all original workflow requirements and functionality
+2. Following all code generation standards and best practices
+3. Preserving the self-contained nature of the code
+4. Keeping all imports and API client implementations
+5. Maintaining the async execute_workflow function signature
+6. Following structured output patterns when extracting information
+7. Including visual search fallback mechanisms where applicable
+
+Generate the improved workflow code that incorporates the user feedback."""
+        
+        # Generate improved workflow
+        improved_workflow = await workflow_generator.generate_workflow(
+            description=enhanced_description,
+            name=f"Improved: {original_workflow.name or 'Workflow'}",
+            context={
+                "feedback_iteration": True,
+                "original_workflow_id": workflow_id,
+                "user_feedback": feedback,
+                **(original_workflow.context or {})
+            }
+        )
+        
+        # Store the improved workflow
+        workflow_executor.store_workflow(improved_workflow)
+        
+        logger.info(f"Workflow improved successfully: {improved_workflow.id}")
+        
+        return WorkflowResponse(
+            id=improved_workflow.id,
+            name=improved_workflow.name,
+            description=improved_workflow.description,
+            status=improved_workflow.status,
+            generated_code=improved_workflow.generated_code,
+            created_at=improved_workflow.created_at,
+            updated_at=improved_workflow.updated_at,
+            error=improved_workflow.error
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to apply feedback to workflow {workflow_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to apply feedback: {str(e)}"
+        )
+
+async def evaluate_test_result_with_ai(
+    test_example: TestExample,
+    actual_output: str,
+    execution_error: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Evaluate test result using Claude AI as a judge.
+    
+    Args:
+        test_example: The test example with validation criteria
+        actual_output: The actual workflow output
+        execution_error: Any error that occurred during execution
+        
+    Returns:
+        Dict containing evaluation result (passed: bool, feedback: str)
+    """
+    try:
+        system_prompt = """You are an AI judge evaluating workflow test results. 
+
+Your task is to determine if a workflow execution passes the user's validation criteria and provide feedback for improvement.
+
+EVALUATION GUIDELINES:
+1. Compare the actual output against the user's validation criteria
+2. Consider both content and format requirements
+3. Be precise but fair in evaluation
+4. For partial matches, consider the intent and practical usefulness
+5. If execution failed with an error, automatically fail the test
+
+OUTPUT FORMAT:
+Return ONLY a JSON object with this exact structure:
+{
+  "passed": boolean,
+  "feedback": "detailed feedback explaining the evaluation decision and suggestions for improvement"
+}
+
+EVALUATION PRINCIPLES:
+- If validation criteria mentions "all X should be Y", check that ALL instances meet the requirement
+- If criteria specifies a format (JSON, table, etc.), verify the output matches that format
+- If criteria includes specific content requirements, verify those are present
+- Consider semantic meaning, not just exact text matches
+- For error cases, explain what went wrong and suggest fixes"""
+
+        if execution_error:
+            evaluation_content = f"""
+TEST VALIDATION CRITERIA:
+{test_example.validation_criteria}
+
+EXPECTED OUTPUT (if provided):
+{test_example.expected_output or "None provided"}
+
+ACTUAL EXECUTION RESULT:
+EXECUTION FAILED WITH ERROR: {execution_error}
+
+ACTUAL OUTPUT: {actual_output or "No output due to error"}
+
+Evaluate if this test passes the validation criteria."""
+        else:
+            evaluation_content = f"""
+TEST VALIDATION CRITERIA:
+{test_example.validation_criteria}
+
+EXPECTED OUTPUT (if provided):
+{test_example.expected_output or "None provided"}
+
+ACTUAL OUTPUT:
+{actual_output}
+
+Evaluate if this test passes the validation criteria."""
+
+        response = workflow_generator.anthropic_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1000,
+            temperature=0,
+            system=system_prompt,
+            messages=[{"role": "user", "content": evaluation_content}]
+        )
+        
+        result_text = response.content[0].text.strip()
+        
+        # Parse JSON response
+        import json
+        try:
+            result = json.loads(result_text)
+            return {
+                "passed": result.get("passed", False),
+                "feedback": result.get("feedback", "Evaluation completed")
+            }
+        except json.JSONDecodeError:
+            # Fallback if JSON parsing fails
+            return {
+                "passed": False,
+                "feedback": f"AI evaluation failed to parse: {result_text[:200]}..."
+            }
+            
+    except Exception as e:
+        logger.error(f"AI evaluation failed: {str(e)}")
+        return {
+            "passed": False,
+            "feedback": f"Evaluation error: {str(e)}"
+        }
+
+@api_router.post("/workflows/automated-test", response_model=AutomatedTestResponse, tags=["Workflows"])
+async def run_automated_workflow_testing(request: AutomatedTestRequest):
+    """
+    Run automated workflow testing and improvement cycle.
+    
+    Executes test examples against workflow code, evaluates results using AI,
+    and iteratively improves the code based on test failures until all tests
+    pass or maximum iterations are reached.
+    
+    Args:
+        request: Automated testing request with workflow code and test examples
+        
+    Returns:
+        AutomatedTestResponse: Results including improved code and test outcomes
+        
+    Raises:
+        HTTPException: 503 if API keys are missing, 400 for validation errors
+    """
+    # Validate required API keys
+    validate_anthropic_api_key()
+    
+    if not request.test_examples:
+        raise HTTPException(status_code=400, detail="At least one test example is required")
+    
+    try:
+        logger.info(f"Starting automated testing with {len(request.test_examples)} test examples")
+        
+        current_code = request.workflow_code
+        iteration_history = []
+        total_iterations = 0
+        all_tests_passed = False
+        problematic_tests = []
+        stopped_reason = "unknown"
+        
+        # Determine iteration limit based on mode
+        if request.iteration_mode == "fixed_iterations":
+            max_iterations = request.fixed_iterations or 1
+        else:
+            max_iterations = request.max_iterations or 10
+            
+        logger.info(f"Testing mode: {request.iteration_mode}, max iterations: {max_iterations}")
+        
+        while total_iterations < max_iterations and not all_tests_passed:
+            total_iterations += 1
+            iteration_start_time = datetime.utcnow()
+            
+            logger.info(f"Starting iteration {total_iterations}/{max_iterations}")
+            
+            # Run all test examples
+            test_results = []
+            failed_tests = []
+            
+            for test_example in request.test_examples:
+                try:
+                    logger.info(f"Running test: {test_example.id}")
+                    
+                    # Execute workflow with test input
+                    execution_start_time = datetime.utcnow()
+                    execution = await workflow_executor.execute_code_directly(
+                        code=current_code,
+                        user_input=test_example.query,
+                        attached_file_ids=test_example.attached_file_ids or []
+                    )
+                    execution_time = (datetime.utcnow() - execution_start_time).total_seconds()
+                    
+                    # Evaluate result with AI
+                    evaluation = await evaluate_test_result_with_ai(
+                        test_example=test_example,
+                        actual_output=execution.result or "",
+                        execution_error=execution.error
+                    )
+                    
+                    test_result = TestResult(
+                        test_id=test_example.id,
+                        passed=evaluation["passed"],
+                        output=execution.result,
+                        evaluation_feedback=evaluation["feedback"],
+                        execution_time=execution_time,
+                        error=execution.error
+                    )
+                    
+                    test_results.append(test_result)
+                    
+                    if not evaluation["passed"]:
+                        failed_tests.append({
+                            "test_id": test_example.id,
+                            "feedback": evaluation["feedback"],
+                            "error": execution.error
+                        })
+                        
+                    logger.info(f"Test {test_example.id}: {'PASSED' if evaluation['passed'] else 'FAILED'}")
+                    
+                except Exception as e:
+                    logger.error(f"Test execution failed for {test_example.id}: {str(e)}")
+                    test_result = TestResult(
+                        test_id=test_example.id,
+                        passed=False,
+                        output=None,
+                        evaluation_feedback=f"Test execution failed: {str(e)}",
+                        execution_time=0,
+                        error=str(e)
+                    )
+                    test_results.append(test_result)
+                    failed_tests.append({
+                        "test_id": test_example.id,
+                        "feedback": f"Execution error: {str(e)}",
+                        "error": str(e)
+                    })
+            
+            # Check if all tests passed
+            all_tests_passed = all(result.passed for result in test_results)
+            
+            # Store iteration history
+            iteration_history.append({
+                "iteration": total_iterations,
+                "timestamp": iteration_start_time.isoformat(),
+                "all_tests_passed": all_tests_passed,
+                "passed_tests": len([r for r in test_results if r.passed]),
+                "total_tests": len(test_results),
+                "test_results": [result.dict() for result in test_results]
+            })
+            
+            if all_tests_passed:
+                stopped_reason = "all_passed"
+                logger.info(f"All tests passed after {total_iterations} iterations!")
+                break
+                
+            # If not all tests passed and we have more iterations, improve the code
+            if total_iterations < max_iterations:
+                logger.info(f"Improving code based on {len(failed_tests)} failed tests")
+                
+                # Generate improvement feedback
+                improvement_feedback = "Based on test failures, please improve the workflow code:\n\n"
+                for failed_test in failed_tests:
+                    improvement_feedback += f"Test '{failed_test['test_id']}' failed: {failed_test['feedback']}\n"
+                    if failed_test['error']:
+                        improvement_feedback += f"Error: {failed_test['error']}\n"
+                    improvement_feedback += "\n"
+                
+                improvement_feedback += "\nPlease fix these issues while maintaining all original functionality."
+                
+                # Use existing feedback application mechanism to improve code
+                enhanced_description = f"""
+CURRENT WORKFLOW CODE TO IMPROVE:
+{current_code}
+
+TEST FAILURE FEEDBACK:
+{improvement_feedback}
+
+INSTRUCTIONS: Modify the workflow code to address all test failures while:
+1. Maintaining all original functionality  
+2. Following all code generation standards and best practices
+3. Preserving the self-contained nature of the code
+4. Keeping all imports and API client implementations
+5. Maintaining the async execute_workflow function signature
+6. Addressing each specific test failure mentioned above
+
+Generate the improved workflow code."""
+
+                try:
+                    improved_workflow = await workflow_generator.generate_workflow(
+                        description=enhanced_description,
+                        name=f"Auto-improved Iteration {total_iterations}",
+                        context={
+                            "automated_testing": True,
+                            "iteration": total_iterations,
+                            "failed_tests": [f["test_id"] for f in failed_tests]
+                        }
+                    )
+                    
+                    current_code = improved_workflow.generated_code
+                    logger.info(f"Code improved for iteration {total_iterations + 1}")
+                    
+                except Exception as e:
+                    logger.error(f"Code improvement failed: {str(e)}")
+                    stopped_reason = "improvement_failed"
+                    break
+        
+        # Determine final stop reason
+        if stopped_reason == "unknown":
+            if total_iterations >= max_iterations:
+                stopped_reason = "max_iterations"
+            
+        # Identify consistently problematic tests (failed in multiple iterations)
+        if len(iteration_history) > 1:
+            test_fail_counts = {}
+            for iteration in iteration_history:
+                for test_result in iteration["test_results"]:
+                    if not test_result["passed"]:
+                        test_id = test_result["test_id"]
+                        test_fail_counts[test_id] = test_fail_counts.get(test_id, 0) + 1
+            
+            # Tests that failed in multiple iterations are problematic
+            problematic_tests = [
+                test_id for test_id, fail_count in test_fail_counts.items() 
+                if fail_count > 1 and fail_count >= len(iteration_history) * 0.5
+            ]
+        
+        final_response = AutomatedTestResponse(
+            improved_workflow_code=current_code,
+            total_iterations=total_iterations,
+            all_tests_passed=all_tests_passed,
+            test_results=test_results,
+            iteration_history=iteration_history,
+            stopped_reason=stopped_reason,
+            problematic_tests=problematic_tests if problematic_tests else None
+        )
+        
+        logger.info(f"Automated testing completed: {stopped_reason}, {total_iterations} iterations")
+        return final_response
+        
+    except Exception as e:
+        logger.error(f"Automated testing failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Automated testing failed: {str(e)}"
         )
 
 @api_router.post("/workflows/execute-code", response_model=WorkflowExecutionResponse, tags=["Execution"])

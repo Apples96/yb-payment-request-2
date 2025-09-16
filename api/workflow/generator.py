@@ -192,12 +192,27 @@ IMPORTANT LIBRARY RESTRICTIONS:
 - Only use aiohttp for HTTP requests (already included in template)
 - DO NOT import external libraries like nltk, requests, pandas, numpy, etc.
 
+CRITICAL: AVOID VARIABLE SCOPING ERRORS
+Always define variables before using them in conditional blocks:
+
+# WRONG - causes UnboundLocalError
+if condition:
+    result = await api_call()
+print(f"Result: {result}")  # ERROR if condition is False
+
+# CORRECT - define first
+result = None  # or appropriate default
+if condition:
+    result = await api_call()
+print(f"Result: {result}")  # Always works
+
 AVAILABLE API METHODS:
 1. await paradigm_client.document_search(query: str, workspace_ids=None, file_ids=None, company_scope=True, private_scope=True, tool="DocumentSearch", private=False)
    *** CRITICAL SCOPING: Use file_ids for SPECIFIC documents OR company_scope/private_scope for BROAD search, NOT both together ***
    *** When file_ids is specified, do NOT set company_scope/private_scope (this would expand search beyond target documents) ***
    *** For specific document search: file_ids=[doc_ids] only ***
    *** For broad search: company_scope=True, private_scope=True only ***
+   *** VISUAL SEARCH FALLBACK: If standard DocumentSearch doesn't find the required information, use tool="VisionDocumentSearch" as fallback ***
 2. await paradigm_client.analyze_documents_with_polling(query: str, document_ids: List[str], model=None, private=False) 
    *** CRITICAL: document_ids can contain MAXIMUM 5 documents. If more than 5, use batching! ***
    *** IMPORTANT: For document type identification, analyze documents ONE BY ONE to get clear ID-to-type mapping ***
@@ -258,6 +273,45 @@ search_result = await paradigm_client.document_search(**search_kwargs)
 # Use the AI-generated answer from search results
 answer = search_result.get("answer", "No answer provided")
 # Don't try to extract raw document content - use the answer field
+
+STRUCTURED OUTPUT EXTRACTION PATTERN:
+For information extraction workflows, use two-step approach: document_search → chat_completion with JSON schema
+
+# Step 1: Get relevant content
+search_result = await paradigm_client.document_search(query, **search_kwargs)
+content = search_result.get("answer", "")
+
+# Step 2: Extract structured data with JSON schema
+extraction_prompt = f\"\"\"Extract information and return valid JSON only:
+
+JSON SCHEMA:
+{{
+  "required_field1": "string or null",
+  "required_field2": "number or null", 
+  "found": "boolean - true if information was found"
+}}
+
+CONTENT: {content}
+
+JSON:\"\"\"
+
+json_result = await paradigm_client.chat_completion(extraction_prompt)
+
+# Parse with fallback to visual search
+import json
+try:
+    data = json.loads(json_result)
+    if not data.get("found", False):
+        # Try visual search as fallback
+        visual_kwargs = search_kwargs.copy()
+        visual_kwargs["tool"] = "VisionDocumentSearch"
+        visual_result = await paradigm_client.document_search(query, **visual_kwargs)
+        visual_content = visual_result.get("answer", "")
+        visual_prompt = extraction_prompt.replace(content, visual_content)
+        visual_json = await paradigm_client.chat_completion(visual_prompt)
+        data = json.loads(visual_json)
+except json.JSONDecodeError:
+    data = {{"error": "Invalid JSON", "found": False}}
 
 INCORRECT (DON'T DO THIS):
 file_ids=attached_file_ids if 'attached_file_ids' in globals() else None  # API doesn't accept None
@@ -344,7 +398,7 @@ Generate a complete, self-contained workflow that:
         """
         enhancement_prompt = """You are an AI assistant that helps users create detailed workflow descriptions for automation systems.
 
-Your task is to analyze the user's raw workflow description and enhance it into a clear, detailed workflow specification that can be effectively implemented using the available Paradigm API tools.
+Your task is to analyze the user's raw workflow description and enhance it into a extremely clear, precise and detailed workflow specification that can be effectively implemented using the available Paradigm API tools.
 
 CRITICAL LANGUAGE PRESERVATION RULE:
 - ALWAYS respond in the SAME LANGUAGE as the user's input
@@ -365,11 +419,13 @@ CRITICAL INFORMATION : ENHANCEMENT GUIDELINES:
 2. For each step, clearly specify:
    - What action will be performed
    - Which Paradigm API tool will be used
-   - What input/output is expected
+   - What the expected input is
+   - What the expected output is
    - Any processing logic needed
    - All conditional logic (if/then/else statements)
    - All rules, constraints, and requirements
    - All edge cases and exception handling
+   - All key information required to use the output in further steps : intructions to store key information, how to format it, etc. 
 
 3. CRITICAL: Preserve EVERY detail from the original description with ZERO information loss
 4. Capture ALL conditional statements ("if this, then that", "when X occurs, do Y", etc.)
@@ -401,8 +457,7 @@ LIMITATIONS TO CHECK FOR:
 - Only built-in Python libraries and aiohttp are available
 
 OUTPUT FORMAT:
-CRITICAL: Provide your response as PLAIN TEXT ONLY. 
-DO NOT use JSON format. 
+CRITICAL: Provide your response as PLAIN TEXT ONLY, in a format that will be easy to understand for an LLM.
 DO NOT wrap your response in ```json or ``` blocks.
 DO NOT use curly braces { } or quotes around your response.
 Return the enhanced workflow steps directly in plain text using the step format structure below.
@@ -453,8 +508,8 @@ Now enhance this workflow description and return ONLY the plain text response:""
         
         try:
             response = self.anthropic_client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=18000,  # Increased for complex workflows
+                model="claude-opus-4-1-20250805",
+                max_tokens=8000,  # Increased for complex workflows
                 temperature=0,  # For reproducible results
                 system=enhancement_prompt,
                 messages=[{"role": "user", "content": user_message}]
@@ -475,30 +530,45 @@ Now enhance this workflow description and return ONLY the plain text response:""
 
     async def _validate_code(self, code: str) -> Dict[str, Any]:
         """
-        Validate that the generated code is syntactically correct and has required structure
+        Enhanced validation for generated code reliability
         """
         try:
-            # Check for syntax errors
+            # Basic syntax check
             compile(code, '<string>', 'exec')
             
-            # Check for required function
+            # Required function check
             if 'def execute_workflow(' not in code:
                 return {"valid": False, "error": "Missing execute_workflow function"}
             
-            # Check for async definition
             if 'async def execute_workflow(' not in code:
                 return {"valid": False, "error": "execute_workflow must be async"}
             
-            # Check for required imports
-            required_imports = ['import asyncio', 'import aiohttp']
+            # Required imports check
+            required_imports = ['import asyncio', 'import aiohttp', 'import json']
+            missing_imports = []
             for imp in required_imports:
                 if imp not in code:
-                    return {"valid": False, "error": f"Missing required import: {imp}"}
+                    missing_imports.append(imp)
+            
+            if missing_imports:
+                return {"valid": False, "error": f"Missing required imports: {', '.join(missing_imports)}"}
+            
+            # Common error pattern detection
+            error_patterns = [
+                ('if.*:\\s*\\n.*=.*await.*\\n.*f.*{.*}', 'Potential UnboundLocalError: variable defined only in conditional block'),
+                ('json\\.loads\\([^)]+\\)(?!.*except)', 'Missing error handling for JSON parsing'),
+                ('await.*\\.get\\(.*\\).*f.*{.*}.*(?!except)', 'API result used in f-string without null check')
+            ]
+            
+            for pattern, warning in error_patterns:
+                if re.search(pattern, code, re.DOTALL):
+                    # Don't fail validation, but log warning
+                    logger.warning(f"Code pattern warning: {warning}")
             
             return {"valid": True, "error": None}
             
         except SyntaxError as e:
-            return {"valid": False, "error": f"Syntax error: {str(e)}"}
+            return {"valid": False, "error": f"Syntax error at line {e.lineno}: {e.msg}"}
         except Exception as e:
             return {"valid": False, "error": f"Validation error: {str(e)}"}
 
