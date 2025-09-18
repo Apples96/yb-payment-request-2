@@ -1641,7 +1641,7 @@ Architecture:
                         this.style.color = '#333';
                     }
                     updateLaunchButtonState();
-            }            });
+                        });
             
             // Initialize launch button state
             updateLaunchButtonState();
@@ -2222,6 +2222,7 @@ Generate the improved workflow code that incorporates the user feedback.`;
                 addLog(`❌ Automated testing network error: ${error.message}`, 'error');
                 finalResultsDiv.innerHTML = `<div class="result error">❌ Network error: ${error.message}</div>`;
                 progressDiv.innerHTML = '';
+            }
             }
         }
     </script>
