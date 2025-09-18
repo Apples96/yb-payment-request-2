@@ -428,8 +428,8 @@ Architecture:
         
          
         // Global configuration and state variables
-        const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
-        // const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
+        // const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
+        const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
@@ -1614,33 +1614,34 @@ Architecture:
             const autoCodeTextarea = document.getElementById('workflowCodeAuto');
             const autoCodeExampleText = "Generated workflow code will appear here after creating a workflow...";
             
-            // Set initial example text
-            autoCodeTextarea.value = autoCodeExampleText;
-            autoCodeTextarea.style.color = '#999';
-            
-            // Handle focus - clear example text when user starts typing
-            autoCodeTextarea.addEventListener('focus', function() {
-                if (this.value === autoCodeExampleText) {
-                    this.value = '';
-                    this.style.color = '#333';
-                }
-            });
-            
-            // Handle blur - restore example text if field is empty
-            autoCodeTextarea.addEventListener('blur', function() {
-                if (this.value.trim() === '') {
-                    this.value = autoCodeExampleText;
-                    this.style.color = '#999';
-                }
-            });
-            
-            // Handle input - change color when user types
-            autoCodeTextarea.addEventListener('input', function() {
-                if (this.value !== autoCodeExampleText) {
-                    this.style.color = '#333';
-                }
-                updateLaunchButtonState();
-            });
+            // Set initial example text (skip if element doesn't exist in file mode)
+            if (autoCodeTextarea) {
+                autoCodeTextarea.value = autoCodeExampleText;
+                autoCodeTextarea.style.color = '#999';
+                
+                // Handle focus - clear example text when user starts typing
+                autoCodeTextarea.addEventListener('focus', function() {
+                    if (this.value === autoCodeExampleText) {
+                        this.value = '';
+                        this.style.color = '#333';
+                    }
+                });
+                
+                // Handle blur - restore example text if field is empty
+                autoCodeTextarea.addEventListener('blur', function() {
+                    if (this.value.trim() === '') {
+                        this.value = autoCodeExampleText;
+                        this.style.color = '#999';
+                    }
+                });
+                
+                // Handle input - change color when user types
+                autoCodeTextarea.addEventListener('input', function() {
+                    if (this.value !== autoCodeExampleText) {
+                        this.style.color = '#333';
+                    }
+                    updateLaunchButtonState();
+            }            });
             
             // Initialize launch button state
             updateLaunchButtonState();
