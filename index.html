@@ -749,8 +749,8 @@ if __name__ == "__main__":
         
          
         // Global configuration and state variables
-        const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
-        // const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
+        // const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
+        const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
@@ -760,21 +760,15 @@ if __name__ == "__main__":
          * Update the test button state based on available workflow code or stored workflow
          */
         function updateTestButtonState() {
+            const codeTextarea = document.getElementById('workflowCode');
+            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
+            
+            const hasCode = codeTextarea && codeTextarea.value.trim() && codeTextarea.value.trim() !== codeExampleText;
+            const hasWorkflowId = currentWorkflowId !== null;
+            
             const testButton = document.getElementById('testButton');
             if (testButton) {
-                // Always enable the test button - it can now use code from workflow_code.py file
-                testButton.disabled = false;
-                
-                // Update button text to indicate the source
-                const codeTextarea = document.getElementById('workflowCode');
-                const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
-                const hasCodeInUI = codeTextarea && codeTextarea.value.trim() && codeTextarea.value.trim() !== codeExampleText;
-                
-                if (hasCodeInUI) {
-                    testButton.textContent = 'Test Workflow (UI Code)';
-                } else {
-                    testButton.textContent = 'Test Workflow (from File)';
-                }
+                testButton.disabled = !(hasCode || hasWorkflowId);
             }
         }
         
@@ -1611,14 +1605,11 @@ if __name__ == "__main__":
             const resultDiv = document.getElementById('testResult');
             const workflowCode = document.getElementById('workflowCode').value.trim();
             
-            // Check if we have custom code in UI - if not, it will use workflow_code.py file
-            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
-            const hasCodeInUI = workflowCode && workflowCode !== codeExampleText;
-            
-            if (hasCodeInUI) {
-                addLog('🔄 Using workflow code from UI text area', 'info');
-            } else {
-                addLog('📁 Using workflow code from workflow_code.py file', 'info');
+            // Check if we have custom code or need to use stored workflow
+            if (!workflowCode && !currentWorkflowId) {
+                alert('Please create a workflow first or enter custom code');
+                addLog('❌ No workflow or code to execute', 'error');
+                return;
             }
 
             // Check if files are attached
@@ -1647,24 +1638,42 @@ if __name__ == "__main__":
             try {
                 let apiCall;
                 
-                // Always use the execute-code endpoint, which will automatically
-                // use UI code if provided, or workflow_code.py file if UI is empty
-                let codeExecutionPayload = {
-                    code: hasCodeInUI ? workflowCode : "",  // Send empty string to use file-based code
-                    user_input: query || ""
-                };
-                
-                if (hasAttachments) {
-                    codeExecutionPayload.attached_file_ids = attachmentIds;
-                }
+                if (workflowCode) {
+                    // Execute custom code directly
+                    let codeExecutionPayload = {
+                        code: workflowCode,
+                        user_input: query || ""
+                    };
+                    
+                    if (hasAttachments) {
+                        codeExecutionPayload.attached_file_ids = attachmentIds;
+                    }
 
-                apiCall = loggedFetch(`${API_BASE}/workflows/execute-code`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(codeExecutionPayload)
-                }, hasCodeInUI ? 'EXECUTE UI WORKFLOW CODE' : 'EXECUTE FILE-BASED WORKFLOW CODE');
+                    apiCall = loggedFetch(`${API_BASE}/workflows/execute-code`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(codeExecutionPayload)
+                    }, 'EXECUTE CUSTOM WORKFLOW CODE');
+                } else {
+                    // Execute stored workflow
+                    let executionPayload = {
+                        user_input: query || ""
+                    };
+                    
+                    if (hasAttachments) {
+                        executionPayload.attached_file_ids = attachmentIds;
+                    }
+
+                    apiCall = loggedFetch(`${API_BASE}/workflows/${currentWorkflowId}/execute`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(executionPayload)
+                    }, 'EXECUTE STORED WORKFLOW');
+                }
 
                 const { response, data } = await apiCall;
 
