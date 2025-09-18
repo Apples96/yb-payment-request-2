@@ -86,7 +86,8 @@ def start_full_system():
         ], cwd=Path(__file__).parent)  # Changed from /frontend to root directory
         
         print("\n✅ Both servers are running!")
-        print("🔗 Open http://localhost:3000 in your browser")
+        print("🔗 Main UI: http://localhost:3000 (or http://localhost:8000)")
+        print("📁 File Mode UI: http://localhost:8000/file-mode (always uses workflow_code.py)")
         print("📡 API docs available at http://localhost:8000/docs")
         print("\nPress Ctrl+C to stop both servers")
         

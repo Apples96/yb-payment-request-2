@@ -161,6 +161,24 @@ async def serve_frontend():
             "note": "Frontend file not found - API only mode"
         }
 
+@app.get("/file-mode", response_class=HTMLResponse, tags=["Frontend"])
+async def serve_file_mode_frontend():
+    """
+    Serve the file-mode frontend HTML page.
+    
+    Returns the file-mode application interface that always uses workflow_code.py.
+    """
+    try:
+        # Try to read the file-workflow.html file from the project root
+        with open("file-workflow.html", "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        # Fallback if file-workflow.html not found
+        return HTMLResponse(
+            content="<h1>File-mode frontend not found</h1><p>Please ensure file-workflow.html exists.</p>",
+            status_code=404
+        )
+
 @app.get("/lighton-logo.png", tags=["Static"])
 async def serve_logo():
     """
@@ -809,39 +827,64 @@ Generate the improved workflow code."""
 @api_router.post("/workflows/execute-code", response_model=WorkflowExecutionResponse, tags=["Execution"])
 async def execute_workflow_code(request: WorkflowCodeExecuteRequest):
     """
-    Execute workflow code directly without requiring a stored workflow.
+    Execute workflow code either from UI or from project's workflow_code.py file.
     
-    Takes raw workflow code and executes it directly with the provided
-    user input and optional file attachments. Useful for testing modified code
-    before storing it as a workflow.
+    If request.code is provided and non-empty, executes code from UI.
+    If request.code is empty/None, reads and executes code from workflow_code.py file.
+    This allows both UI-based testing and file-based workflow execution.
     
     Args:
-        request: Code execution request containing code, user input, and optional file IDs
+        request: Code execution request containing optional code, user input, and optional file IDs
         
     Returns:
         WorkflowExecutionResponse: Execution results including status, timing, and output
         
     Raises:
-        HTTPException: If code execution fails
+        HTTPException: If no code source is available or execution fails
         
     Note:
         The code will have access to global 'attached_file_ids' variable
         containing the list of file IDs from request.attached_file_ids
     """
     try:
-        logger.info(f"Executing workflow code directly")
+        logger.info(f"Executing workflow code")
         logger.info(f"User input: {request.user_input[:100]}...")
-        logger.info(f"Code length: {len(request.code)} characters")
         if request.attached_file_ids:
             logger.info(f"Attached files: {request.attached_file_ids}")
         
-        # Execute the code directly using workflow executor's safe execution method
-        execution = await workflow_executor.execute_code_directly(request.code, request.user_input, request.attached_file_ids)
+        # Determine code source: UI code or file-based code
+        if request.code and request.code.strip():
+            # Use code from UI request
+            workflow_code = request.code
+            code_source = "UI"
+            workflow_id = "ui-code-execution"
+            logger.info(f"Using code from UI: {len(workflow_code)} characters")
+        else:
+            # Read workflow code from the project file
+            try:
+                with open("workflow_code.py", "r", encoding="utf-8") as f:
+                    workflow_code = f.read()
+                code_source = "File"
+                workflow_id = "file-based-execution"
+                logger.info(f"Using code from workflow_code.py: {len(workflow_code)} characters")
+            except FileNotFoundError:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="No workflow code provided in request and workflow_code.py file not found. Either provide code in the request or create workflow_code.py file with your workflow code."
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to read workflow_code.py: {str(e)}"
+                )
         
-        logger.info(f"Code execution completed: {execution.id} (status: {execution.status})")
+        # Execute the workflow code using workflow executor's safe execution method
+        execution = await workflow_executor.execute_code_directly(workflow_code, request.user_input, request.attached_file_ids)
+        
+        logger.info(f"Code execution completed from {code_source}: {execution.id} (status: {execution.status})")
         
         return WorkflowExecutionResponse(
-            workflow_id="direct-code-execution",
+            workflow_id=workflow_id,
             execution_id=execution.id,
             result=execution.result,
             status=execution.status.value,
@@ -850,6 +893,8 @@ async def execute_workflow_code(request: WorkflowCodeExecuteRequest):
             created_at=execution.created_at
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Code execution error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Code execution failed: {str(e)}")

@@ -41,7 +41,7 @@ Architecture:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workflow Automation Test</title>
+    <title>Workflow Automation - File Mode</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
     <style>
         /* 
@@ -298,76 +298,54 @@ Architecture:
     <h1>
         <img src="/lighton-logo.png" alt="LightOn Logo">
         <span>workflow builder</span>
+        <small style="display: block; font-size: 14px; color: #666; margin-top: 5px;">📁 File Mode - Uses workflow_code.py for testing</small>
     </h1>
     
-    <!-- Step 1: Describe Workflow -->
-    <div class="container">
-        <h2>1. Describe Workflow</h2>
-        <p>Describe your desired workflow in natural language:</p>
-        <textarea id="rawWorkflowDescription" placeholder="Example: I want to search for documents about my question and then analyze them to provide a summary..." style="color: #999;"></textarea>
-        <button onclick="enhanceWorkflowDescription()">Enhance Description</button>
-        
-        <div id="enhancedDescriptionResult" style="margin-top: 15px;"></div>
-        <div id="enhancedDescription" style="display: none;"></div>
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px auto; max-width: 800px; border-left: 4px solid #007bff;">
+        <h3 style="margin-top: 0; color: #333;">💼 Payment Request & Invoice Validation Workflow</h3>
+        <p style="margin: 10px 0; color: #555; line-height: 1.5;">
+            This workflow validates payment requests against their supporting invoices. It extracts amounts from uploaded documents, 
+            compares totals for discrepancies, identifies invoices older than 90 days, and generates detailed validation reports 
+            to ensure payment accuracy and compliance.
+        </p>
     </div>
-
-    <!-- Step 2: Create Workflow -->
-    <div class="container">
-        <h2>2. Create Workflow</h2>
-        <p>Review and optionally edit the enhanced workflow description:</p>
-        <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0; font-size: 13px; color: #666;">
-            <strong>Available tools:</strong> document upload, chat, document search, document analysis, image analysis<br>
-            <strong>📚 API Reference:</strong> Detailed information about endpoints, parameters, and responses can be found in the <a href="https://paradigm.lighton.ai/api/schema/swagger-ui/#/" target="_blank" style="color: #007bff;">Paradigm API Swagger documentation</a><br>
-            <strong>💡 Tip:</strong> Use Step 1 above to get an enhanced workflow description, or manually enter your workflow here.
-        </div>
-        <textarea id="workflowDescription" placeholder="Example: Search for documents about LightOn, then analyze those documents to summarize key information..." style="color: #999;"></textarea>
-        <input type="text" id="workflowName" placeholder="Workflow name (optional)" />
-        <button onclick="createWorkflow()">Create Workflow</button>
-        
-        <!-- Tip about document storage -->
-        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #2196f3;">
-            <strong>💡 Tip:</strong> If your workflow processes documents, they will be stored in your private Paradigm workspace. To avoid storing documents permanently, add a final step to your workflow description: "Delete all input documents after processing."
-        </div>
-        
-        <div id="workflowResult"></div>
-    </div>
-
+    
     <!-- Step 3: Test Workflow -->
     <div class="container">
-        <h2>3. Test Workflow</h2>
+        <h2>Test Workflow</h2>
         
-        <!-- Generated Code Section -->
-        <div style="margin: 15px 0;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold;">💻 Generated Workflow Code:</label>
-            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px; color: #666;">
-                <strong>💡 Tip:</strong> The generated code will appear here automatically after creating a workflow. You can edit it before testing if needed.
-            </div>
-            <textarea id="workflowCode" placeholder="Generated workflow code will appear here after creating a workflow..." style="height: 200px; font-family: 'Courier New', monospace; font-size: 12px; color: #999;"></textarea>
-            <div id="feedbackIterationCounter" style="font-size: 11px; color: #666; margin-top: 5px; display: none;">
-                📝 <span id="iterationCount">0</span> feedback improvement(s) applied
+        <!-- Upload Instructions -->
+        <div style="background: #fff3e0; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ff9800;">
+            <h3 style="margin-top: 0; color: #e65100;">📋 Upload Instructions</h3>
+            <div style="margin: 15px 0;">
+                <p style="margin: 8px 0; color: #333; font-weight: bold;">Step 1: Upload Payment Request</p>
+                <p style="margin: 5px 0 15px 20px; color: #555;">Upload the single payment request document first.</p>
+                
+                <p style="margin: 8px 0; color: #333; font-weight: bold;">Step 2: Upload Supporting Invoices</p>
+                <p style="margin: 5px 0 15px 20px; color: #555;">Upload all supporting invoice documents (no limit on number of invoices).</p>
+                
+                <p style="margin: 8px 0; color: #666; font-size: 14px;">
+                    <strong>⚠️ Important:</strong> Upload order matters! The first document uploaded will be treated as the payment request, 
+                    and all subsequent documents will be treated as invoices.
+                </p>
             </div>
         </div>
-
-        <p>Enter your query and optionally attach documents:</p>
-        
-        <!-- Query Input -->
-        <input type="text" id="testQuery" placeholder="What is LightOn's main technology platform?" />
         
         <!-- Document Upload Section -->
         <div style="margin: 15px 0;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold;">📎 Attach Documents (Optional):</label>
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">📎 Upload Documents:</label>
             <div class="file-upload-area" id="queryUploadArea" ondrop="handleQueryDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
                 <p>📎 Drag and drop files here or <button onclick="document.getElementById('queryFileInput').click()">browse files</button></p>
                 <input type="file" id="queryFileInput" multiple style="display: none;" onchange="handleQueryFileSelect(event)">
-                <p style="font-size: 12px; color: #666;">Upload documents to analyze with your query</p>
-                <p style="font-size: 11px; color: #888; margin-top: 5px;">Note: In this demo, attached documents will be automatically deleted after workflow execution.</p>
+                <p style="font-size: 12px; color: #666;">Upload payment request first, then invoices</p>
+                <p style="font-size: 11px; color: #888; margin-top: 5px;">Supported formats: PDF, DOC, DOCX, TXT, and images</p>
             </div>
             
             <div id="queryUploadStatus"></div>
             <ul class="file-list" id="queryFilesList"></ul>
         </div>
         
-        <button onclick="executeWorkflowWithQuery()" id="testButton" disabled>Test Workflow</button>
+        <button onclick="executeWorkflowWithQuery()" id="testButton">Test Workflow (from File)</button>
         <div id="testResult" style="margin-top: 15px;"></div>
         
         <!-- Feedback Section -->
@@ -393,324 +371,25 @@ Architecture:
         </div>
     </div>
 
-    <!-- Step 3B: Test and Update Workflow Automatically -->
-    <div class="container">
-        <h2>3B. Test and update workflow automatically</h2>
-        
-        <!-- Generated Code Section -->
-        <div style="margin: 15px 0;">
-            <label style="display: block; margin-bottom: 8px; font-weight: bold;">💻 Generated Workflow Code:</label>
-            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px; color: #666;">
-                <strong>💡 Tip:</strong> The generated code will appear here automatically after creating a workflow. You can edit it before testing if needed.
-            </div>
-            <textarea id="workflowCodeAuto" placeholder="Generated workflow code will appear here after creating a workflow..." style="height: 200px; font-family: 'Courier New', monospace; font-size: 12px; color: #999;"></textarea>
-        </div>
-
-        <!-- Test Examples Section -->
-        <div style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #007bff;">
-            <h3 style="color: #333; margin-top: 0;">🧪 Test Examples</h3>
-            
-            <!-- Current Test Example Form -->
-            <div id="currentTestForm" style="background: white; padding: 15px; border-radius: 4px; margin: 10px 0;">
-                <h4 style="margin-top: 0; color: #555;">Add Test Example</h4>
-                
-                <!-- Query Input -->
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Query:</label>
-                    <input type="text" id="testExampleQuery" placeholder="What is LightOn's main technology platform?" style="width: 100%;" />
-                </div>
-                
-                <!-- Document Upload Section -->
-                <div style="margin: 15px 0;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">📎 Attach Documents (Optional):</label>
-                    <div class="file-upload-area" id="autoTestUploadArea" ondrop="handleAutoTestDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
-                        <p>📎 Drag and drop files here or <button onclick="document.getElementById('autoTestFileInput').click()">browse files</button></p>
-                        <input type="file" id="autoTestFileInput" multiple style="display: none;" onchange="handleAutoTestFileSelect(event)">
-                        <p style="font-size: 12px; color: #666;">Upload documents to analyze with your query</p>
-                        <p style="font-size: 11px; color: #888; margin-top: 5px;">Note: In this demo, attached documents will be automatically deleted after workflow execution.</p>
-                    </div>
-                    <div id="autoTestUploadStatus"></div>
-                    <ul class="file-list" id="autoTestFilesList"></ul>
-                </div>
-                
-                <!-- Test Validation Criteria -->
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Test Validation Criteria:</label>
-                    <textarea id="testValidationCriteria" placeholder="Example: 'all 22 controls tested in the workflow should be VALID' or 'the output should have the same format and answers as the example below: [example]'" style="height: 80px; width: 100%;"></textarea>
-                    <div style="background: #fff3e0; padding: 8px; border-radius: 4px; margin-top: 5px; font-size: 12px; color: #e65100;">
-                        <strong>💡 Tip:</strong> Be specific about what makes the test pass. Examples: format requirements, specific content, validation rules, etc.
-                    </div>
-                </div>
-                
-                <!-- Expected Output (Optional) -->
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Expected Output (Optional):</label>
-                    <textarea id="testExpectedOutput" placeholder="Paste expected output example here (optional - used for comparison)" style="height: 60px; width: 100%;"></textarea>
-                </div>
-                
-                <!-- Description (Optional) -->
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Test Description (Optional):</label>
-                    <input type="text" id="testDescription" placeholder="Brief description of what this test validates" style="width: 100%;" />
-                </div>
-                
-                <button onclick="addTestExample()" style="background: #28a745; color: white;">Add Test Example</button>
-            </div>
-            
-            <!-- Test Examples List -->
-            <div id="testExamplesList" style="margin-top: 20px;">
-                <h4 style="color: #555;">📋 Added Test Examples</h4>
-                <div id="testExamplesDisplay" style="background: white; padding: 15px; border-radius: 4px; min-height: 60px;">
-                    <p style="color: #666; font-style: italic; margin: 0;">No test examples added yet. Add your first test example above.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Iteration Control Section -->
-        <div style="margin: 20px 0; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
-            <h3 style="color: #333; margin-top: 0;">⚙️ Iteration Control</h3>
-            
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 10px; font-weight: bold;">Testing Mode:</label>
-                <div style="margin-left: 10px;">
-                    <label style="display: block; margin-bottom: 8px;">
-                        <input type="radio" name="iterationMode" value="until_passed" checked onchange="updateIterationMode()"> 
-                        Iterate until AI deems all tests are passed (max 10 iterations)
-                    </label>
-                    <label style="display: block;">
-                        <input type="radio" name="iterationMode" value="fixed_iterations" onchange="updateIterationMode()"> 
-                        Fixed number of iterations: <input type="number" id="fixedIterations" value="3" min="1" max="10" style="width: 60px; margin-left: 5px;" disabled>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Launch Button -->
-        <div style="text-align: center; margin: 20px 0;">
-            <button onclick="launchAutomatedTesting()" id="launchTestingButton" disabled style="background: #ff6b35; color: white; font-size: 16px; padding: 15px 30px; border-radius: 8px; cursor: pointer;">
-                🚀 Launch Workflow Tests and Updates
-            </button>
-            <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                <span id="testButtonStatus">Add at least one test example to start testing</span>
-            </div>
-        </div>
-        
-        <!-- Results Display -->
-        <div id="automatedTestResults" style="margin-top: 20px; display: none;">
-            <h3 style="color: #333;">📊 Automated Testing Results</h3>
-            <div id="testingProgress" style="background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0;">
-                <div id="progressContent"></div>
-            </div>
-            <div id="finalResults" style="margin-top: 15px;"></div>
-        </div>
-    </div>
-
-    <!-- Step 4: Update Workflow -->
-    <div class="container">
-        <h2>4. Edit workflow</h2>
-        <p>Edit the workflow description above and regenerate the workflow to refine its behavior. You can modify the natural language description to add new steps, change the logic, or improve the workflow based on your test results. After testing, go back to step 1 or 2, update your workflow description, and regenerate to create an improved version.</p>
-        
-        <!-- Monitoring Helper Section -->
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            <h3 style="color: #666; font-size: 16px; margin-bottom: 15px;">📊 Monitor Workflow Execution</h3>
-            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Monitor every step of workflow execution with detailed information:</p>
-            <ul style="font-size: 12px; color: #666; margin: 10px 0;">
-                <li>🔍 API endpoints called and payloads sent</li>
-                <li>📊 Document IDs, file IDs, and search queries</li>
-                <li>💬 Response content and analysis results</li>
-                <li>📄 Document chunks and file processing details</li>
-                <li>⚡ Step-by-step workflow execution flow</li>
-                <li>❌ Error handling and fallback mechanisms</li>
-            </ul>
-            <button onclick="clearLogs()" class="clear-logs">Clear Logs</button>
-            <div class="logs-container" id="logsContainer">
-                <div class="log-entry">
-                    <span class="log-timestamp">[Ready]</span> <span class="log-response">Waiting for API activity...</span>
-                </div>
+    <!-- Monitoring Helper Section -->
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <h3 style="color: #666; font-size: 16px; margin-bottom: 15px;">📊 Monitor Workflow Execution</h3>
+        <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Monitor every step of workflow execution with detailed information:</p>
+        <ul style="font-size: 12px; color: #666; margin: 10px 0;">
+            <li>🔍 API endpoints called and payloads sent</li>
+            <li>📊 Document IDs, file IDs, and search queries</li>
+            <li>💬 Response content and analysis results</li>
+            <li>📄 Document chunks and file processing details</li>
+            <li>⚡ Step-by-step workflow execution flow</li>
+            <li>❌ Error handling and fallback mechanisms</li>
+        </ul>
+        <button onclick="clearLogs()" class="clear-logs">Clear Logs</button>
+        <div class="logs-container" id="logsContainer">
+            <div class="log-entry">
+                <span class="log-timestamp">[Ready]</span> <span class="log-response">Waiting for API activity...</span>
             </div>
         </div>
     </div>
-
-    <!-- Step 5: Deploy Workflow API -->
-    <div class="container">
-        <h2>5. Deploy your workflow API endpoint</h2>
-        <p>Deploy your workflow as a standalone API endpoint that can be called from external applications.</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-            <h3>Option A: Deploy on Vercel (Recommended for quick setup)</h3>
-            <ol style="margin-left: 20px;">
-                <li><strong>Create a new directory for your API:</strong> Create a new folder on your computer for this deployment</li>
-                <li><strong>Install Vercel CLI:</strong> If you haven't already, install Vercel CLI by running: <code>npm install -g vercel</code></li>
-                <li><strong>Login to Vercel:</strong> Run <code>vercel login</code> and follow the prompts to connect your GitHub account</li>
-                <li><strong>Create your API file:</strong> Create <code>api/workflow.py</code> with your generated code plus these imports:</li>
-            </ol>
-            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>from http.server import BaseHTTPRequestHandler
-import json
-import os
-from typing import Dict, Any
-
-# IMPORTANT: Add your Paradigm API key here
-# You can get this from your Paradigm admin interface
-PARADIGM_API_KEY = "your-paradigm-api-key-here"
-
-# Add your generated workflow code here
-# ... (paste your generated code)
-
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data.decode('utf-8'))
-        
-        # Execute your workflow here
-        result = execute_workflow(data.get('query', ''))
-        
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-        
-        response = json.dumps({'result': result})
-        self.wfile.write(response.encode())
-    
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
-</code></pre>
-            <ol style="margin-left: 20px;">
-                <li><strong>Add your Paradigm API key:</strong> Replace <code>"your-paradigm-api-key-here"</code> in the code above with your actual Paradigm API key</li>
-                <li><strong>Deploy to Vercel:</strong> In your project directory, run <code>vercel --prod</code></li>
-                <li><strong>Set environment variables:</strong> In the Vercel dashboard, go to your project settings → Environment Variables and add your Paradigm API key</li>
-                <li><strong>Get your API URL:</strong> After deployment, Vercel will show you your API URL. It will be something like: <code>https://your-project.vercel.app/api/workflow</code></li>
-            </ol>
-            
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #2196f3;">
-                <strong>💡 Note:</strong> Vercel automatically detects Python files in the <code>api/</code> directory and deploys them as serverless functions. No <code>vercel.json</code> configuration is needed for basic deployments.
-            </div>
-            
-            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
-                <strong> Important:</strong> Make sure to add your Paradigm API key as an environment variable in the Vercel dashboard for security. Never commit API keys to your code.
-            </div>
-            
-            <h3>Option B: Deploy on your own infrastructure</h3>
-            <ol style="margin-left: 20px;">
-                <li>Create a new Python file (e.g., <code>workflow_api.py</code>)</li>
-                <li>Add these dependencies to your <code>requirements.txt</code>:</li>
-            </ol>
-            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>fastapi==0.104.1
-uvicorn==0.24.0
-python-multipart==0.0.6
-aiohttp==3.9.1
-python-dotenv==1.0.0</code></pre>
-            <ol style="margin-left: 20px;">
-                <li>Create your API file with this structure:</li>
-            </ol>
-            <pre style="background: #fff; padding: 10px; border-radius: 4px; overflow-x: auto;"><code>from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import uvicorn
-from typing import Optional
-import os
-
-# IMPORTANT: Add your Paradigm API key here
-# You can get this from your Paradigm admin interface
-PARADIGM_API_KEY = "your-paradigm-api-key-here"
-
-# Add your generated workflow code here
-# ... (paste your generated code)
-
-app = FastAPI()
-
-class WorkflowRequest(BaseModel):
-    query: str
-    user_id: Optional[str] = None
-
-@app.post("/workflow")
-async def execute_workflow_endpoint(request: WorkflowRequest):
-    try:
-        result = execute_workflow(request.query)
-        return {"result": result, "status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)</code></pre>
-            <ol style="margin-left: 20px;">
-                <li><strong>Add your Paradigm API key:</strong> Replace <code>"your-paradigm-api-key-here"</code> in the code above with your actual Paradigm API key</li>
-                <li><strong>Install dependencies:</strong> Run <code>pip install -r requirements.txt</code></li>
-                <li><strong>Run your API:</strong> Execute <code>python workflow_api.py</code></li>
-                <li><strong>Access your API:</strong> Your API will be available at <code>http://your-server:8000/workflow</code></li>
-            </ol>
-            
-            <div style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 10px 0; border-left: 4px solid #ffc107;">
-                <strong>🔑 Important:</strong> Make sure to add your Paradigm API key to the code before running. You can get this key from your Paradigm admin interface under API settings.
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 6: Add to Paradigm -->
-    <div class="container">
-        <h2>6. Add your workflow to Paradigm</h2>
-        <p>Paradigm has a feature called "Third Party Tools" that allows you to create custom tools within the Paradigm UI. When you use the tool, it will execute your deployed workflow.</p>
-        
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
-            <h3>Step-by-step instructions:</h3>
-            <ol style="margin-left: 20px;">
-                <li><strong>Access Third Party Tools:</strong> In your Paradigm admin interface, navigate to the Third Party Tools section</li>
-                <li><strong>Create New Tool:</strong> Click "Add Third Party Tool"</li>
-                <li><strong>Fill in Basic Information:</strong>
-                    <ul style="margin-left: 20px;">
-                        <li><strong>Name:</strong> Give your workflow a descriptive name (e.g., "Document Analysis Workflow")</li>
-                        <li><strong>Enabled:</strong> Check this box to activate the tool</li>
-                        <li><strong>Description:</strong> Provide a detailed description of what your workflow does. Be specific about:
-                            <ul style="margin-left: 20px;">
-                                <li>What tasks it can perform</li>
-                                <li>What types of queries it handles</li>
-                                <li>Any limitations or requirements</li>
-                                <li>Example use cases</li>
-                            </ul>
-                            <strong>Example:</strong> "This workflow analyzes documents and provides detailed summaries. It can search through uploaded documents, extract key information, and generate comprehensive analysis reports. Works best with text-based documents and specific questions about document content."
-                        </li>
-                    </ul>
-                </li>
-                <li><strong>HTTP Configuration:</strong>
-                    <ul style="margin-left: 20px;">
-                        <li><strong>HTTP Method:</strong> Select "POST" (since your workflow expects POST requests)</li>
-                        <li><strong>Headers:</strong> Add any required headers (usually none needed for basic setup)</li>
-                        <li><strong>Require Document:</strong> Set to "No" (tools currently can't retrieve uploaded docs from the Paradigm UI)</li>
-                    </ul>
-                </li>
-                <li><strong>Creation Method:</strong> Select "Parameters/URL"</li>
-                <li><strong>URL:</strong> Enter your deployed API endpoint URL:
-                    <ul style="margin-left: 20px;">
-                        <li>For Vercel: <code>https://your-project.vercel.app/api/workflow</code></li>
-                        <li>For custom infrastructure: <code>http://your-server:8000/workflow</code></li>
-                    </ul>
-                </li>
-                <li><strong>Parameters:</strong> Configure the parameters your API expects:
-                    <ul style="margin-left: 20px;">
-                        <li><strong>Body Parameters:</strong> Add a parameter named "user_input" of type "string" (or "query" in some cases, but generally "user_input" is what the endpoint expects)</li>
-                    <li><strong>API Documentation:</strong> If deploying via FastAPI, you can view the full API documentation at "your API base URL/docs" (e.g., https://your-api.vercel.app/docs)</li>
-                        <li>If your API expects additional parameters, add them as needed</li>
-                    </ul>
-                </li>
-                <li><strong>Save and Deploy:</strong> Save your tool configuration, then navigate to Chat settings in the Paradigm admin and activate your third party tool using the arrow.</li>
-            </ol>
-            
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 15px;">
-                <strong>�� Important:</strong> The description you provide is crucial for tool routing. Paradigm uses this description to understand when to use your tool, so make it as detailed and accurate as possible.
-            </div>
-        </div>
-    </div>
-
-    <!-- Step 7: Test and Share -->
-    <div class="container">
-        <h2>7. 🚀 Test and share</h2>
-        <p>You are now set up to use your workflow as a third party tool within Paradigm. The other users in your company can also access this tool, so spread the news and show them how it works!</p>
     </div>
 
     <script>
@@ -762,19 +441,9 @@ if __name__ == "__main__":
         function updateTestButtonState() {
             const testButton = document.getElementById('testButton');
             if (testButton) {
-                // Always enable the test button - it can now use code from workflow_code.py file
+                // Always enable the test button and always use file mode
                 testButton.disabled = false;
-                
-                // Update button text to indicate the source
-                const codeTextarea = document.getElementById('workflowCode');
-                const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
-                const hasCodeInUI = codeTextarea && codeTextarea.value.trim() && codeTextarea.value.trim() !== codeExampleText;
-                
-                if (hasCodeInUI) {
-                    testButton.textContent = 'Test Workflow (UI Code)';
-                } else {
-                    testButton.textContent = 'Test Workflow (from File)';
-                }
+                testButton.textContent = 'Test Workflow (from File)';
             }
         }
         
@@ -1607,19 +1276,13 @@ if __name__ == "__main__":
          * Runs the generated workflow code and displays results with detailed logging.
          */
         async function executeWorkflowWithQuery() {
-            const query = document.getElementById('testQuery').value.trim();
+            const query = "Validate payment request against invoices"; // Default query for payment validation workflow
             const resultDiv = document.getElementById('testResult');
-            const workflowCode = document.getElementById('workflowCode').value.trim();
+            const workflowCode = ""; // No UI code in file mode - always uses workflow_code.py
             
-            // Check if we have custom code in UI - if not, it will use workflow_code.py file
-            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
-            const hasCodeInUI = workflowCode && workflowCode !== codeExampleText;
-            
-            if (hasCodeInUI) {
-                addLog('🔄 Using workflow code from UI text area', 'info');
-            } else {
-                addLog('📁 Using workflow code from workflow_code.py file', 'info');
-            }
+            // Always use file-based workflow code in this version
+            const hasCodeInUI = false; // Force file mode
+            addLog('📁 Always using workflow code from workflow_code.py file (File Mode)', 'info');
 
             // Check if files are attached
             const hasAttachments = queryAttachedFiles.length > 0;
@@ -1937,41 +1600,12 @@ if __name__ == "__main__":
                 }
             });
 
-            // Set up example text behavior for workflow code textarea
-            const codeTextarea = document.getElementById('workflowCode');
-            const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
-            
-            // Set initial example text
-            codeTextarea.value = codeExampleText;
-            codeTextarea.style.color = '#999';
-            
-            // Handle focus - clear example text when user starts typing
-            codeTextarea.addEventListener('focus', function() {
-                if (this.value === codeExampleText) {
-                    this.value = '';
-                    this.style.color = '#333';
-                }
-                updateTestButtonState();
-            });
-            
-            // Handle blur - restore example text if field is empty
-            codeTextarea.addEventListener('blur', function() {
-                if (this.value.trim() === '') {
-                    this.value = codeExampleText;
-                    this.style.color = '#999';
-                }
-                updateTestButtonState();
-            });
-            
-            // Handle input - change color when user types and enable test button
-            codeTextarea.addEventListener('input', function() {
-                if (this.value !== codeExampleText) {
-                    this.style.color = '#333';
-                }
-                updateTestButtonState();
-            });
+            // File mode doesn't have the workflow code textarea - skip this initialization
             
             document.getElementById('testButton').textContent = 'Test Workflow';
+            
+            // Initialize test button for file mode
+            updateTestButtonState();
             
             // Initialize automated testing features
             syncWorkflowCode();
@@ -2019,7 +1653,8 @@ if __name__ == "__main__":
         async function applyFeedbackToCode() {
             const feedback = document.getElementById('feedbackInput').value.trim();
             const resultDiv = document.getElementById('feedbackResult');
-            const currentCode = document.getElementById('workflowCode').value.trim();
+            const workflowCodeElement = document.getElementById('workflowCode');
+            const currentCode = workflowCodeElement ? workflowCodeElement.value.trim() : "";
             const codeExampleText = "Generated workflow code will appear here after creating a workflow...";
             
             if (!feedback) {
@@ -2134,6 +1769,7 @@ Generate the improved workflow code that incorporates the user feedback.`;
             const mainCodeTextarea = document.getElementById('workflowCode');
             const autoCodeTextarea = document.getElementById('workflowCodeAuto');
             
+            // In file mode, mainCodeTextarea might not exist - skip sync if so
             if (mainCodeTextarea && autoCodeTextarea) {
                 // Sync from main to auto when main changes
                 mainCodeTextarea.addEventListener('input', function() {
