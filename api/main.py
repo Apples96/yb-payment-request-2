@@ -180,7 +180,7 @@ async def serve_file_mode_frontend():
         )
 
 @app.get("/lighton-logo.png", tags=["Static"])
-async def serve_logo():
+async def serve_lighton_logo():
     """
     Serve the LightOn logo image.
     """
@@ -189,7 +189,19 @@ async def serve_logo():
             image_data = f.read()
         return Response(content=image_data, media_type="image/png")
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Logo not found")
+        raise HTTPException(status_code=404, detail="LightOn logo not found")
+
+@app.get("/ybak-logo.png", tags=["Static"])
+async def serve_ybak_logo():
+    """
+    Serve the YBAK logo image.
+    """
+    try:
+        with open("ybak-logo.png", "rb") as f:
+            image_data = f.read()
+        return Response(content=image_data, media_type="image/png")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="YBAK logo not found")
 
 @app.get("/health", tags=["Health"]) 
 async def health_check():
