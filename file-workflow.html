@@ -511,7 +511,9 @@ Architecture:
          * Processes files selected via browse button.
          */
         function handleQueryFileSelect(event) {
+            console.log('handleQueryFileSelect called', event.target.files);
             const files = Array.from(event.target.files);
+            console.log('Files array:', files);
             uploadQueryFiles(files);
         }
 
@@ -522,13 +524,22 @@ Architecture:
          * @param {FileList} files - Files to upload
          */
         async function uploadQueryFiles(files) {
+            console.log('uploadQueryFiles called with files:', files);
             const statusDiv = document.getElementById('queryUploadStatus');
             const filesList = document.getElementById('queryFilesList');
             
+            console.log('statusDiv:', statusDiv);
+            console.log('filesList:', filesList);
+            
             for (const file of files) {
+                console.log('Processing file:', file.name);
                 try {
                     statusDiv.innerHTML = `<div class="result loading">Uploading ${file.name}...</div>`;
-                    addLog(`📤 Uploading query attachment: ${file.name} (${file.size} bytes)`, 'info');
+                    try {
+                        addLog(`📤 Uploading query attachment: ${file.name} (${file.size} bytes)`, 'info');
+                    } catch (logError) {
+                        console.error('addLog error:', logError);
+                    }
                     
                     const formData = new FormData();
                     formData.append('file', file);
