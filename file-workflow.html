@@ -526,7 +526,7 @@ Architecture:
                     formData.append('file', file);
                     formData.append('collection_type', 'private');
                     
-                    const { response, data } = await loggedFetch(`${API_BASE}/files/upload`, {
+                    const { response, data } = await loggedFetch(`${API_BASE}/v2/files`, {
                         method: 'POST',
                         body: formData
                     }, `UPLOAD QUERY FILE: ${file.name}`);
@@ -578,7 +578,7 @@ Architecture:
             try {
                 addLog(`🗑️ Removing query attachment ID: ${fileId}`, 'info');
                 
-                const { response, data } = await loggedFetch(`${API_BASE}/files/${fileId}`, {
+                const { response, data } = await loggedFetch(`${API_BASE}/v2/files/${fileId}`, {
                     method: 'DELETE'
                 }, `DELETE QUERY FILE: ${fileId}`);
                 
@@ -624,7 +624,7 @@ Architecture:
             
             for (const documentId of documentIds) {
                 try {
-                    const { response } = await loggedFetch(`${API_BASE}/files/${documentId}`, {
+                    const { response } = await loggedFetch(`${API_BASE}/v2/files/${documentId}`, {
                         method: 'DELETE'
                     }, `CLEANUP TEST DOCUMENT: ${documentId}`);
                     
@@ -1814,7 +1814,7 @@ Generate the improved workflow code that incorporates the user feedback.`;
                     formData.append('file', file);
                     formData.append('collection_type', 'private');
                     
-                    const { response, data } = await loggedFetch(`${API_BASE}/files/upload`, {
+                    const { response, data } = await loggedFetch(`${API_BASE}/v2/files`, {
                         method: 'POST',
                         body: formData
                     }, `UPLOAD AUTO-TEST FILE: ${file.name}`);
@@ -1863,7 +1863,7 @@ Generate the improved workflow code that incorporates the user feedback.`;
             try {
                 addLog(`🗑️ Removing auto-test attachment ID: ${fileId}`, 'info');
                 
-                const { response, data } = await loggedFetch(`${API_BASE}/files/${fileId}`, {
+                const { response, data } = await loggedFetch(`${API_BASE}/v2/files/${fileId}`, {
                     method: 'DELETE'
                 }, `DELETE AUTO-TEST FILE: ${fileId}`);
                 
