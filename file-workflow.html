@@ -351,7 +351,7 @@ Architecture:
             </div>
         </div>
         
-        <button onclick="executeWorkflowWithQuery()" id="testButton">Test Workflow (from File)</button>
+        <button onclick="executeWorkflowWithQuery()" id="testButton">Test Workflow</button>
         <div id="testResult" style="margin-top: 15px;"></div>
         
     </div>
@@ -409,7 +409,7 @@ Architecture:
             if (testButton) {
                 // Always enable the test button and always use file mode
                 testButton.disabled = false;
-                testButton.textContent = 'Test Workflow (from File)';
+                testButton.textContent = 'Test Workflow';
             }
         }
         
@@ -1431,11 +1431,6 @@ Architecture:
                         
                         showResult(resultDiv, resultMessage, 'success');
                         
-                        // Add tip about Paradigm tool
-                        const tipDiv = document.createElement('div');
-                        tipDiv.style.cssText = 'background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 10px; border-left: 4px solid #2196f3; font-size: 12px;';
-                        tipDiv.innerHTML = '<strong>💡 Tip:</strong> The demo workflow is available in Paradigm under the tool "Workflow demo". To run your newly generated workflow, go to Admin → Third Party Tools → Workflow demo tool and change the workflow ID in the URL address to the format shown above (e.g., "afe2e40e-3514-4445-b1c9-80ce24571837").';
-                        resultDiv.appendChild(tipDiv);
                         
                         // Automatically delete uploaded documents from Paradigm after testing
                         if (hasAttachments) {
