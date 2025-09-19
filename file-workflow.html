@@ -354,27 +354,6 @@ Architecture:
         <button onclick="executeWorkflowWithQuery()" id="testButton">Test Workflow (from File)</button>
         <div id="testResult" style="margin-top: 15px;"></div>
         
-        <!-- Feedback Section -->
-        <div id="feedbackSection" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; display: none;">
-            <h3 style="color: #333; font-size: 18px; margin-bottom: 15px;">🔧 Improve Generated Code</h3>
-            <p style="color: #666; margin-bottom: 15px;">Provide feedback to modify the generated workflow code while maintaining all original requirements:</p>
-            
-            <div style="margin: 15px 0;">
-                <label style="display: block; margin-bottom: 8px; font-weight: bold;">💬 Your Feedback:</label>
-                <textarea id="feedbackInput" 
-                    placeholder="Example: 'The output format should include the document source names' or 'Add error handling for missing fields' or 'Sort results by date in descending order'" 
-                    style="height: 100px; width: 100%; resize: vertical;">
-                </textarea>
-                <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 13px; color: #e65100;">
-                    <strong>💡 Note:</strong> Your feedback will be used to modify the code while preserving all original workflow requirements and code generation standards.
-                </div>
-            </div>
-            
-            <button onclick="applyFeedbackToCode()" id="feedbackButton" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
-                Apply Feedback to Code
-            </button>
-            <div id="feedbackResult" style="margin-top: 15px;"></div>
-        </div>
     </div>
 
     </div>
@@ -415,8 +394,8 @@ Architecture:
         
          
         // Global configuration and state variables
-        // const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
-        const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
+        const API_BASE = 'http://localhost:8000/api'  // Local backend API base URL with /api prefix
+        // const API_BASE = '/api'  // Same-domain API base URL for Vercel deployment
         let currentWorkflowId = null;    // Currently active workflow ID
         let logCounter = 0;              // Counter for log entry IDs
         let queryAttachedFiles = [];     // Files attached to current query
@@ -1451,9 +1430,6 @@ Architecture:
                         resultMessage += `\n\n=== RESULT ===\n${data.result}`;
                         
                         showResult(resultDiv, resultMessage, 'success');
-                        
-                        // Show feedback section after successful execution
-                        document.getElementById('feedbackSection').style.display = 'block';
                         
                         // Add tip about Paradigm tool
                         const tipDiv = document.createElement('div');
